@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI 인사총무 어시스턴트 · 하나솔루션</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --main:#1E40AF; --sub:#3B82F6; --base:#F8FAFC; --text:#0F172A;
+    --line:#E2E8F0; --muted:#64748B; --danger:#DC2626; --danger-bg:#FEF2F2;
+    --ok-bg:#EFF6FF; --gray-bg:#F1F5F9; --gray-text:#475569; --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",Arial,sans-serif; background:var(--base); color:var(--text);}
+  .app{display:flex; min-height:100vh;}
+
+  .sidebar{width:240px; flex-shrink:0; background:#0B1D4D; color:#fff; display:flex; flex-direction:column; padding:28px 16px;}
+  .brand{padding:0 8px 28px; border-bottom:1px solid rgba(255,255,255,.12); margin-bottom:20px;}
+  .brand .logo{font-size:17px; font-weight:700;}
+  .brand .sub{font-size:12px; color:#93A5D1; margin-top:4px;}
+  .nav{display:flex; flex-direction:column;}
+  .nav-group{margin-bottom:2px;}
+  .nav-items{display:flex; flex-direction:column; gap:4px; overflow:hidden;}
+  .nav-group.collapsed .nav-items{display:none;}
+  .nav-item{display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:8px; color:#C7D2E8; font-size:14px; cursor:pointer; transition:.15s;}
+  .nav-item:hover{background:rgba(255,255,255,.06);}
+  .nav-item.active{background:var(--sub); color:#fff; font-weight:600;}
+  .nav-section-label{font-size:10.5px; font-weight:700; letter-spacing:.03em; color:#5E75AC; padding:16px 12px 6px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none;}
+  .nav-group:first-child .nav-section-label{padding-top:2px;}
+  .nav-chevron{font-size:9px; color:#5E75AC; transition:transform .18s;}
+  .nav-group.collapsed .nav-chevron{transform:rotate(-90deg);}
+  .nav-icon{width:18px; text-align:center;}
+  .sidebar-foot{margin-top:auto; padding-top:16px; font-size:11px; color:#6B7FB0; border-top:1px solid rgba(255,255,255,.1);}
+
+  .content{flex:1; padding:32px 40px; max-width:1320px;}
+  .topbar{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:6px; flex-wrap:wrap; gap:12px;}
+  .topbar h1{font-size:22px; margin:0 0 4px;}
+  .topbar .desc{font-size:13px; color:var(--muted); margin:0;}
+  .actions{display:flex; gap:8px;}
+  .btn{display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; padding:9px 14px; border-radius:8px; cursor:pointer; border:1px solid transparent; user-select:none;}
+  .btn-primary{background:var(--main); color:#fff;}
+  .btn-primary:hover{background:#1B3699;}
+  .btn-outline{background:#fff; color:var(--main); border-color:#C7D2FE;}
+  .btn-outline:hover{background:#EEF2FF;}
+
+  .toast{position:fixed; top:20px; right:20px; background:var(--main); color:#fff; padding:11px 18px; border-radius:8px; font-size:13px; box-shadow:0 8px 24px rgba(30,64,175,.28); opacity:0; transform:translateY(-8px); transition:.25s; pointer-events:none; z-index:99; max-width:320px;}
+  .toast.show{opacity:1; transform:translateY(0);}
+
+  .panel{background:#fff; border:1px solid var(--line); border-radius:14px; margin-top:18px; overflow:hidden;}
+  .panel-note{padding:14px 20px; font-size:12.5px; color:var(--muted); background:#F5F8FF; border-bottom:1px solid var(--line); line-height:1.65;}
+  .panel-note b{color:var(--main);}
+  .panel-note .fixed-tag{display:inline-block; font-size:11px; background:var(--gray-bg); color:var(--gray-text); padding:1px 7px; border-radius:6px; margin-left:4px;}
+  .panel-note .edit-tag{display:inline-block; font-size:11px; background:var(--ok-bg); color:var(--main); padding:1px 7px; border-radius:6px; margin-left:4px;}
+
+  .stats-row{display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;}
+  .stat-card{flex:1; min-width:140px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 18px;}
+  .stat-card .label{font-size:12px; color:var(--muted); margin-bottom:6px;}
+  .stat-card .value{font-size:22px; font-weight:700; color:var(--main);}
+  .stat-card.warn .value{color:var(--danger);}
+  .stat-card.muted .value{color:var(--gray-text);}
+
+  .toolbar{display:flex; align-items:center; gap:10px; padding:14px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+  .toolbar label{font-size:12.5px; color:var(--muted); font-weight:600;}
+  .toolbar select{padding:6px 10px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:#fff;}
+
+  .section-title{font-size:15px; font-weight:700; color:var(--main); padding:16px 20px 6px;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  thead th{background:var(--main); color:#fff; font-weight:600; text-align:center; padding:10px 7px; white-space:nowrap;}
+  tbody td{padding:8px 7px; text-align:center; border-bottom:1px solid var(--line); white-space:nowrap;}
+  tbody tr:hover{background:#F8FAFF;}
+  tbody input, tbody select{width:100%; border:1px solid var(--line); border-radius:6px; padding:5px 6px; font-size:12.5px; text-align:center; font-family:inherit; color:var(--text); background:#fff;}
+  tbody input:focus, tbody select:focus{outline:none; border-color:var(--sub); box-shadow:0 0 0 2px rgba(59,130,246,.18);}
+  tbody input[type=checkbox]{width:16px; height:16px;}
+  tbody td.fixed-cell{color:var(--gray-text); background:#FAFBFD;}
+  .badge{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600;}
+  .badge-ok{background:var(--ok-bg); color:var(--main);}
+  .badge-warn{background:var(--danger-bg); color:var(--danger);}
+  .badge-muted{background:var(--gray-bg); color:var(--gray-text);}
+  .num{text-align:right !important; font-variant-numeric:tabular-nums;}
+  .name-cell{font-weight:600;}
+
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+  .table-scroll{overflow-x:auto;}
+  .foot-note{padding:10px 20px; font-size:11.5px; color:#94A3B8; border-top:1px solid var(--line);}
+
+  /* ── FAQ 챗봇 탭 ── */
+  .chat-wrap{display:flex; gap:16px; margin-top:18px; align-items:flex-start;}
+  .chat-panel{flex:1; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; height:560px;}
+  .chat-header{padding:14px 20px; background:var(--main); color:#fff; display:flex; align-items:center; gap:10px;}
+  .chat-header .dot{width:8px; height:8px; border-radius:50%; background:#4ADE80;}
+  .chat-header .title{font-weight:700; font-size:14px;}
+  .chat-header .sub{font-size:11.5px; color:#DBEAFE; margin-left:auto;}
+  .chat-body{flex:1; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:12px; background:#F8FAFF;}
+  .msg{max-width:78%; padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.55; white-space:pre-wrap;}
+  .msg.ai{align-self:flex-start; background:#fff; border:1px solid var(--line); color:var(--text); border-bottom-left-radius:4px;}
+  .msg.user{align-self:flex-end; background:var(--main); color:#fff; border-bottom-right-radius:4px;}
+  .msg.ai b{color:var(--main);}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; padding:12px 20px; border-top:1px solid var(--line); background:#fff;}
+  .chip{font-size:12px; padding:7px 12px; border-radius:999px; background:#EFF6FF; color:var(--main); border:1px solid #DBEAFE; cursor:pointer; white-space:nowrap;}
+  .chip:hover{background:#DBEAFE;}
+  .chat-input-row{display:flex; gap:8px; padding:14px 20px; border-top:1px solid var(--line); background:#fff;}
+  .chat-input-row input{flex:1; border:1px solid var(--line); border-radius:10px; padding:11px 14px; font-size:13px; font-family:inherit; color:var(--text);}
+  .chat-input-row input:focus{outline:none; border-color:var(--sub); box-shadow:0 0 0 2px rgba(59,130,246,.18);}
+  .chat-send-btn{background:var(--main); color:#fff; border:none; border-radius:10px; padding:0 20px; font-size:13px; font-weight:700; cursor:pointer;}
+  .chat-send-btn:hover{background:#1B3699;}
+  .faq-side{width:300px; flex-shrink:0;}
+  .faq-side .panel{margin-top:0;}
+  .faq-list-item{padding:12px 16px; border-bottom:1px solid var(--line); font-size:12.5px; color:var(--text); cursor:pointer;}
+  .faq-list-item:last-child{border-bottom:none;}
+  .faq-list-item:hover{background:#F8FAFF;}
+  .faq-list-item .q-tag{display:inline-block; font-size:10.5px; font-weight:700; color:var(--main); margin-right:4px;}
+
+  /* ── 일할계산기 탭 ── */
+  .calc-wrap{display:flex; gap:16px; margin-top:18px; align-items:flex-start;}
+  .calc-form{flex:1.1; background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px;}
+  .calc-form .field{margin-bottom:16px;}
+  .calc-form label{display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px;}
+  .calc-form input, .calc-form select{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:13.5px;
+    font-family:inherit; color:var(--text); background:#fff;
+  }
+  .calc-form input:focus, .calc-form select:focus{outline:none; border-color:var(--sub); box-shadow:0 0 0 2px rgba(59,130,246,.18);}
+  .calc-form .hint{font-size:11px; color:#94A3B8; margin-top:4px;}
+  .calc-result{flex:1; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .calc-result-head{padding:16px 20px; background:var(--main); color:#fff; font-weight:700; font-size:14px;}
+  .calc-row{display:flex; justify-content:space-between; align-items:center; padding:11px 20px; border-bottom:1px solid var(--line); font-size:13px;}
+  .calc-row .k{color:var(--muted);}
+  .calc-row .v{font-weight:600; color:var(--text); font-variant-numeric:tabular-nums;}
+  .calc-row.total{background:#F5F8FF;}
+  .calc-row.total .v{color:var(--main); font-size:16px; font-weight:800;}
+
+  /* ── 퇴사 위험도 예측 탭 ── */
+  .risk-wrap{display:grid; grid-template-columns:1.1fr 0.9fr; gap:16px;}
+  @media(max-width:900px){.risk-wrap{grid-template-columns:1fr;}}
+  .risk-field{margin-bottom:16px;}
+  .risk-field label{display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:6px;}
+  .risk-field .risk-val{color:var(--main); font-weight:700;}
+  .risk-field input[type=range]{width:100%; accent-color:var(--main);}
+  .risk-check{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; padding:9px 0;}
+  .risk-check input{width:16px; height:16px; accent-color:var(--main);}
+  .risk-result-card{text-align:center; padding:24px;}
+  .risk-gauge{position:relative; width:180px; height:180px; margin:0 auto 12px;}
+  .risk-gauge svg{transform:rotate(-90deg);}
+  .risk-gauge-label{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;}
+  .risk-gauge-pct{font-size:32px; font-weight:800;}
+  .risk-gauge-tag{font-size:12px; font-weight:700; margin-top:2px; padding:2px 10px; border-radius:20px; display:inline-block;}
+  .risk-factors{text-align:left; margin-top:20px;}
+  .risk-factors h3{font-size:13px; margin:0 0 10px; color:var(--muted);}
+  .risk-factor-row{display:flex; justify-content:space-between; align-items:center; font-size:13px; padding:8px 0; border-top:1px solid var(--line);}
+  .risk-factor-row:first-of-type{border-top:none;}
+  .risk-factor-bar{flex:1; height:6px; background:#E2E8F0; border-radius:4px; margin:0 10px; overflow:hidden;}
+  .risk-factor-bar-fill{height:100%; border-radius:4px;}
+
+  /* ── 직원경험 데이터 탭 ── */
+  .exp-wrap{display:grid; grid-template-columns:1.1fr 0.9fr; gap:16px; margin-top:14px;}
+  @media(max-width:900px){.exp-wrap{grid-template-columns:1fr;}}
+  .exp-chart{display:flex; align-items:flex-end; gap:6px; height:120px; margin:6px 0 20px;}
+  .exp-bar{flex:1; border-radius:3px 3px 0 0; position:relative;}
+  .exp-bar-label{position:absolute; bottom:-18px; left:0; right:0; text-align:center; font-size:10px; color:var(--muted);}
+  .exp-keyword-row{display:flex; align-items:center; gap:8px; font-size:12px; padding:5px 0;}
+  .exp-keyword-tag{padding:2px 8px; border-radius:12px; font-weight:700; min-width:60px; text-align:center;}
+  .exp-keyword-bar{flex:1; height:6px; background:#E2E8F0; border-radius:4px; overflow:hidden;}
+  .exp-keyword-bar-fill{height:100%;}
+  .exp-dept-row{display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-top:1px solid var(--line);}
+  .exp-dept-row:first-of-type{border-top:none;}
+  .exp-log{max-height:150px; overflow-y:auto; margin-top:14px; font-size:12px;}
+  .exp-log-item{padding:8px 0; border-top:1px solid var(--line); color:var(--gray-text);}
+  .exp-log-item:first-of-type{border-top:none;}
+  .exp-log-item .exp-tag{font-size:10px; font-weight:700; padding:1px 6px; border-radius:8px; margin-right:6px;}
+
+  /* ── 근태 이상징후 분석 탭 ── */
+  .att-dept-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  @media(max-width:720px){.att-dept-grid{grid-template-columns:1fr;}}
+  .att-dept-h{font-size:12px; color:var(--muted); margin:0 0 10px;}
+  .att-bar-row{margin-bottom:10px;}
+  .att-bar-label{display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;}
+  .att-bar-track{height:8px; background:#E2E8F0; border-radius:5px; overflow:hidden;}
+  .att-bar-fill{height:100%; border-radius:5px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">하나솔루션</div>
+      <div class="sub">AI 인사총무 어시스턴트</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-group">
+        <div class="nav-section-label"><span>근태 및 운영</span><span class="nav-chevron">▾</span></div>
+        <div class="nav-items">
+          <div class="nav-item active" data-tab="attendance"><span class="nav-icon">🕘</span> 근태·연차 관리</div>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-section-label"><span>급여 및 정산</span><span class="nav-chevron">▾</span></div>
+        <div class="nav-items">
+          <div class="nav-item" data-tab="payroll"><span class="nav-icon">💳</span> 급여대장</div>
+          <div class="nav-item" data-tab="proration"><span class="nav-icon">🧮</span> 중도입퇴사 일할계산기</div>
+          <div class="nav-item" data-tab="retirement"><span class="nav-icon">🏦</span> 퇴직금·연금</div>
+          <div class="nav-item" data-tab="yearend"><span class="nav-icon">🧾</span> 연말정산·보수총액신고</div>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-section-label"><span>자산 및 총무</span><span class="nav-chevron">▾</span></div>
+        <div class="nav-items">
+          <div class="nav-item" data-tab="asset"><span class="nav-icon">💻</span> 자산·비품 관리</div>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-section-label"><span>피플 인사이트</span><span class="nav-chevron">▾</span></div>
+        <div class="nav-items">
+          <div class="nav-item" data-tab="evaluation"><span class="nav-icon">🎯</span> 인사평가 관리</div>
+          <div class="nav-item" data-tab="turnover"><span class="nav-icon">📉</span> 퇴사 위험도 예측</div>
+          <div class="nav-item" data-tab="experience"><span class="nav-icon">💡</span> 직원경험 데이터</div>
+          <div class="nav-item" data-tab="attrisk"><span class="nav-icon">⏱️</span> 근태 이상징후 분석</div>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-section-label"><span>지원 서비스</span><span class="nav-chevron">▾</span></div>
+        <div class="nav-items">
+          <div class="nav-item" data-tab="faq"><span class="nav-icon">💬</span> 사내규정 FAQ 챗봇</div>
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-foot">전 데이터는 브라우저 메모리에서만<br/>처리되며 서버로 전송되지 않습니다.</div>
+  </aside>
+
+  <main class="content">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">근태·연차 관리</h1>
+        <p class="desc" id="pageDesc">실제 출근시각과 사용 연차를 입력하면 지각여부·잔여연차가 자동으로 계산됩니다.</p>
+      </div>
+      <div class="actions">
+        <label class="btn btn-outline">📤 엑셀 업로드
+          <input type="file" id="fileInput" accept=".xlsx,.xls" hidden />
+        </label>
+        <button class="btn btn-primary" id="downloadBtn">📥 엑셀 다운로드</button>
+      </div>
+    </div>
+
+    <!-- 근태·연차 -->
+    <section id="tab-attendance" class="tab-panel active">
+      <div class="panel">
+        <div class="panel-note">정규 출근시각은 09:00 기준입니다. 실제출근시각·사용연차를 수정하면 지각여부·잔여연차가 즉시 다시 계산됩니다. 여기서 계산된 <b>잔여연차</b>는 급여대장 탭의 연차수당 계산에도 그대로 연결됩니다.</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>사번</th><th>이름</th><th>부서</th><th>정규출근</th><th>실제출근</th>
+              <th>지각여부</th><th>부여연차(일)</th><th>사용연차(일)</th><th>잔여연차(일)</th>
+            </tr></thead>
+            <tbody id="attendanceBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 급여대장 -->
+    <section id="tab-payroll" class="tab-panel">
+      <div class="panel">
+        <div class="panel-note">
+          <b>4대보험 요율(2026년 기준)</b>: 국민연금 합계 근로자 4.75% <span class="edit-tag">수정 가능</span> ·
+          건강보험 합계 근로자 3.595% <span class="fixed-tag">고정</span> ·
+          장기요양보험 건강보험료의 13.14%(소득 대비 약 0.9448%) <span class="fixed-tag">고정</span> ·
+          고용보험 0.9% <span class="edit-tag">수정 가능</span>.
+          건강보험은 요율 변동이 드물어 고정값으로, 국민연금·고용보험은 두루누리 지원 등으로 요율이 달라질 수 있어 표에서 직접 수정할 수 있게 했습니다.<br/>
+          <b>원천세</b>는 고정 비율이 아니라, 실제 국세청 근로소득 간이세액표 산출 공식(연간환산 → 근로소득공제 → 인적공제(부양가족수 반영) → 기본세율표 → 근로소득세액공제 → 12개월 분할)을 반영한 근사치로 계산합니다. 실제 간이세액표 조회값과는 소폭 차이가 있을 수 있습니다.<br/>
+          <b>연차수당</b> 체크박스를 켜면 근태 탭의 잔여(미사용)연차를 "1일 통상임금(기본급÷30) × 잔여일수"로 환산해 지급총액에 더해서 계산합니다(간이 추정치).
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>사번</th><th>이름</th><th>기본급</th><th>부양가족수</th><th>잔여연차(일)</th><th>연차수당 포함</th><th>연차수당</th>
+              <th>지급총액</th><th>국민연금 요율(%)</th><th>국민연금</th><th>건강보험</th><th>장기요양</th>
+              <th>고용보험 요율(%)</th><th>고용보험</th><th>원천세(간이세액)</th><th>공제합계</th><th>실수령액</th>
+            </tr></thead>
+            <tbody id="payrollBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 중도입퇴사 일할계산기 -->
+    <section id="tab-proration" class="tab-panel">
+      <div class="panel-note">
+        입사일 또는 퇴사일 중 <b>해당 월에 속하는 날짜만</b> 입력하세요 (중도입사면 입사일만, 중도퇴사면 퇴사일만, 입사·퇴사가 같은 달이면 둘 다).
+        재직일수 ÷ 해당 월 총일수 비율로 세전 급여와 4대보험료를 일할 계산합니다.
+        <b>국민연금·건강보험은 실무상 입사·퇴사월 전체를 부과하거나 별도 기준을 적용하는 경우가 많아, 이 계산은 급여 항목과 동일한 비율을 적용한 간이 추정치</b>라는 점을 참고해주세요.
+      </div>
+      <div class="calc-wrap">
+        <div class="calc-form">
+          <div class="field">
+            <label>직원 선택 (급여대장 기본급 자동 반영)</label>
+            <select id="prEmp"></select>
+          </div>
+          <div class="field">
+            <label>정산 대상 연월</label>
+            <input type="month" id="prMonth" />
+          </div>
+          <div class="field">
+            <label>입사일 (해당 월 중도입사 시에만 입력)</label>
+            <input type="date" id="prHireDate" />
+          </div>
+          <div class="field">
+            <label>퇴사일 (해당 월 중도퇴사 시에만 입력)</label>
+            <input type="date" id="prLeaveDate" />
+            <div class="hint">두 칸 모두 비워두면 해당 월 전체 재직으로 계산됩니다.</div>
+          </div>
+          <div class="field">
+            <label>월 기본급(세전)</label>
+            <input type="number" id="prBase" step="10000" />
+          </div>
+          <button class="btn btn-primary" id="prCalcBtn" style="width:100%; justify-content:center; padding:11px;">일할 계산하기</button>
+        </div>
+        <div class="calc-result">
+          <div class="calc-result-head">일할 정산 결과</div>
+          <div class="calc-row"><span class="k">해당 월 총일수</span><span class="v" id="prTotalDays">-</span></div>
+          <div class="calc-row"><span class="k">실 재직일수</span><span class="v" id="prWorkDays">-</span></div>
+          <div class="calc-row"><span class="k">일할 비율</span><span class="v" id="prRatio">-</span></div>
+          <div class="calc-row"><span class="k">세전 일할 급여</span><span class="v" id="prBasePay">-</span></div>
+          <div class="calc-row"><span class="k">국민연금(일할)</span><span class="v" id="prNp">-</span></div>
+          <div class="calc-row"><span class="k">건강보험(일할)</span><span class="v" id="prHi">-</span></div>
+          <div class="calc-row"><span class="k">장기요양보험(일할)</span><span class="v" id="prLt">-</span></div>
+          <div class="calc-row"><span class="k">고용보험(일할)</span><span class="v" id="prEi">-</span></div>
+          <div class="calc-row total"><span class="k">일할 실수령액(추정)</span><span class="v" id="prNet">-</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 퇴직금·연금 -->
+    <section id="tab-retirement" class="tab-panel">
+      <div class="panel">
+        <div class="panel-note">
+          <b>퇴직금 추정액</b>은 "1개월 평균임금(≈기본급) × 근속연수"로 계산한 간이 추정치입니다. 실제 퇴직금은 근로기준법상 <b>퇴직 직전 3개월 평균임금</b>(상여금·연차수당 등 포함)을 기준으로 계산하므로 실제 지급액과 차이가 있을 수 있습니다.<br/>
+          <b>퇴직연금 유형</b>이 DC(확정기여형)인 경우, 회사는 매년 <b>연간 임금총액의 1/12 이상</b>을 부담금으로 적립해야 합니다(연간 적립액 추정 = 기본급 1개월분으로 근사).
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>사번</th><th>이름</th><th>입사일</th><th>근속연수(년)</th><th>기본급(월)</th>
+              <th>퇴직금 추정액</th><th>퇴직연금 유형</th><th>연간 적립액 추정(DC)</th>
+            </tr></thead>
+            <tbody id="retirementBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 연말정산 · 보수총액신고 -->
+    <section id="tab-yearend" class="tab-panel">
+      <div class="panel">
+        <div class="panel-note">
+          <b>① 연말정산(소득세)</b>이란 매달 간이세액표로 미리 뗀 원천세(기납부세액)와, 1년치 실제 소득·공제를 반영해 다시 계산한 결정세액을 비교해 <b>환급 또는 추가납부</b>를 정하는 절차입니다.
+          이 데모는 인적공제(부양가족수)와 4대보험료 소득공제만 반영한 <b>단순화된 계산</b>이며, 실제로는 신용카드·보험료·의료비·기부금 등 다양한 공제 항목이 추가로 반영됩니다.
+        </div>
+        <div class="section-title">① 연말정산(소득세) 추정</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>사번</th><th>이름</th><th>총급여액(연)</th><th>근로소득공제</th><th>근로소득금액</th>
+              <th>인적공제</th><th>4대보험료공제</th><th>과세표준</th><th>산출세액</th><th>세액공제</th>
+              <th>결정세액</th><th>기납부세액(원천세×12)</th><th>환급/추가납부</th>
+            </tr></thead>
+            <tbody id="yearEndTaxBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-note">
+          <b>② 보수총액신고</b>는 매년 초, 전년도 고용·산재보험료 산정 기준이었던 "추정 보수총액"과 실제로 지급한 "확정 보수총액"의 차액을 근로복지공단에 신고해 <b>보험료를 정산</b>하는 절차입니다.
+          "전년도 신고(추정) 월평균보수"는 직접 수정해서 시나리오를 바꿔볼 수 있습니다.
+        </div>
+        <div class="section-title">② 보수총액신고(고용·산재보험료 정산)</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>사번</th><th>이름</th><th>전년도 신고(추정) 월평균보수</th><th>추정 보수총액(연)</th>
+              <th>확정 보수총액(연)</th><th>차액</th><th>고용보험 정산차액</th><th>산재보험 정산차액(사업주부담)</th><th>정산결과</th>
+            </tr></thead>
+            <tbody id="remunerationBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 자산·비품 -->
+    <section id="tab-asset" class="tab-panel">
+      <div class="stats-row" id="assetStats"></div>
+      <div class="panel" style="margin-top:14px;">
+        <div class="panel-note">사용자(이름)는 사용자 사번을 근태 탭 임직원 명단과 매칭해 자동으로 표시됩니다. 사용자가 지정되지 않은 자산은 "미사용(재고)"로 집계됩니다. 교체예정일이 지났거나 미반납 상태면 "확인필요"로 표시됩니다.</div>
+        <div class="toolbar">
+          <label>자산종류 필터</label>
+          <select id="assetFilter"></select>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>자산번호</th><th>자산종류</th><th>모델명</th><th>지급일자</th><th>사용자</th>
+              <th>사용자(이름)</th><th>교체주기(개월)</th><th>교체예정일</th><th>교체도래</th><th>반납여부</th><th>상태</th>
+            </tr></thead>
+            <tbody id="assetBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 인사평가 관리 -->
+    <section id="tab-evaluation" class="tab-panel">
+      <div class="panel-note">
+        <b>종합점수</b> = 목표달성도 60% + 역량평가 40%로 계산하며, 90점 이상 <b>S</b>, 80점 이상 <b>A</b>, 70점 이상 <b>B</b>, 60점 이상 <b>C</b>, 그 미만은 <b>D</b> 등급으로 자동 환산합니다.
+        이 등급 체계는 [퇴사 위험도 예측] 탭의 "최근 평가등급 변화" 입력 기준과 동일하게 맞췄습니다. 목표달성도·역량평가 점수를 수정하면 종합점수·등급·등급변동이 즉시 다시 계산됩니다.
+      </div>
+      <div class="stats-row" style="margin-top:14px;">
+        <div class="stat-card"><div class="label">전사 평균 종합점수</div><div class="value" id="evalAvgScore">--</div></div>
+        <div class="stat-card"><div class="label">S+A 등급 비율</div><div class="value" id="evalTopRate">--%</div></div>
+        <div class="stat-card muted"><div class="label">전기 대비 등급 상승 인원</div><div class="value" id="evalUpCount">--</div></div>
+      </div>
+      <div class="panel" style="margin-top:14px;">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>사번</th><th>이름</th><th>부서</th><th>평가기간</th><th>목표달성도(점)</th><th>역량평가(점)</th>
+              <th>종합점수</th><th>종합등급</th><th>전기등급</th><th>등급변동</th><th>평가 코멘트</th>
+            </tr></thead>
+            <tbody id="evaluationBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:14px; padding:20px;">
+        <div class="section-title" style="padding:0 0 14px;">등급 분포</div>
+        <div id="evalDistChart"></div>
+      </div>
+    </section>
+
+    <!-- 퇴사 위험도 예측 -->
+    <section id="tab-turnover" class="tab-panel">
+      <div class="panel-note">
+        가상 직원 800명 데이터로 로지스틱 회귀(Scikit-learn)를 학습시켜 산출한 가중치를 그대로 이식한 계산기입니다.
+        AUC 0.87 수준으로 검증했으며, <b>야근시간 증가</b>와 <b>평가등급 하락</b>이 가장 강한 퇴사 신호로 확인됐습니다. 슬라이더를 조정하면 위험도가 실시간으로 재계산됩니다.
+      </div>
+      <div class="risk-wrap">
+        <div class="panel" style="margin-top:14px; padding:22px;">
+          <div class="risk-field">
+            <label>근속연수 <span class="risk-val" id="rv-tenure">3.0년</span></label>
+            <input type="range" id="r-tenure" min="0.2" max="15" step="0.1" value="3">
+          </div>
+          <div class="risk-field">
+            <label>최근 3개월 야근시간 증감 정도 <span class="risk-val" id="rv-overtime">보통</span></label>
+            <input type="range" id="r-overtime" min="-3" max="3" step="0.5" value="0">
+          </div>
+          <div class="risk-field">
+            <label>연차 사용률 <span class="risk-val" id="rv-leave">50%</span></label>
+            <input type="range" id="r-leave" min="0" max="100" step="1" value="50">
+          </div>
+          <div class="risk-field">
+            <label>최근 평가등급 변화 <span class="risk-val" id="rv-eval">변동 없음</span></label>
+            <input type="range" id="r-evalscore" min="-3" max="3" step="0.5" value="0">
+          </div>
+          <div class="risk-field">
+            <label>최근 급여 인상률 <span class="risk-val" id="rv-salary">3.0%</span></label>
+            <input type="range" id="r-salary" min="-5" max="15" step="0.5" value="3">
+          </div>
+          <div class="risk-field">
+            <label>출퇴근 거리 <span class="risk-val" id="rv-commute">8km</span></label>
+            <input type="range" id="r-commute" min="0.5" max="50" step="0.5" value="8">
+          </div>
+          <div class="risk-check">
+            <input type="checkbox" id="r-leaveSplit">
+            <label for="r-leaveSplit">최근 연차를 금요일/월요일에 붙여 사용한 적 있음</label>
+          </div>
+          <div class="risk-check">
+            <input type="checkbox" id="r-managerChange">
+            <label for="r-managerChange">최근 6개월 내 담당 매니저 변경 있음</label>
+          </div>
+        </div>
+
+        <div class="panel risk-result-card" style="margin-top:14px;">
+          <div class="risk-gauge">
+            <svg width="180" height="180" viewBox="0 0 180 180">
+              <circle cx="90" cy="90" r="78" fill="none" stroke="#E2E8F0" stroke-width="14"/>
+              <circle id="riskGaugeArc" cx="90" cy="90" r="78" fill="none" stroke="#1E40AF"
+                      stroke-width="14" stroke-linecap="round"
+                      stroke-dasharray="490" stroke-dashoffset="490"/>
+            </svg>
+            <div class="risk-gauge-label">
+              <div class="risk-gauge-pct" id="riskPct">--%</div>
+              <div class="risk-gauge-tag" id="riskTag">계산 중</div>
+            </div>
+          </div>
+          <div class="risk-factors">
+            <h3>주요 영향 요인 (Top 3)</h3>
+            <div id="riskFactorList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 직원경험 데이터 -->
+    <section id="tab-experience" class="tab-panel">
+      <div class="panel-note">
+        매주 짧은 펄스 서베이 응답을 코멘트 키워드 기반으로 감정 점수화해, 별도 시스템 도입 없이도 조직의 몰입도 흐름을 데이터로 관리합니다.
+      </div>
+      <div class="stats-row" style="margin-top:14px;">
+        <div class="stat-card"><div class="label">이번 주 평균 몰입도</div><div class="value" id="expScore">--</div></div>
+        <div class="stat-card warn"><div class="label">부정 키워드 언급률</div><div class="value" id="expNeg">--%</div></div>
+        <div class="stat-card"><div class="label">전사 eNPS(추정)</div><div class="value" id="expEnps">--</div></div>
+        <div class="stat-card muted"><div class="label">3개월 내 조기이탈률</div><div class="value">4.2%</div></div>
+      </div>
+      <div class="exp-wrap">
+        <div class="panel" style="padding:20px;">
+          <div class="section-title" style="padding:0 0 12px;">이번 주 펄스 서베이 응답</div>
+          <label style="font-size:12px; font-weight:700; color:var(--muted); display:block; margin-bottom:6px;">이번 주 업무 몰입도는 어땠나요?</label>
+          <select id="expRating" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; margin-bottom:12px;">
+            <option value="5">5 - 매우 좋음</option>
+            <option value="4">4 - 좋음</option>
+            <option value="3" selected>3 - 보통</option>
+            <option value="2">2 - 별로</option>
+            <option value="1">1 - 힘듦</option>
+          </select>
+          <label style="font-size:12px; font-weight:700; color:var(--muted); display:block; margin-bottom:6px;">자유롭게 이유를 적어주세요 (선택)</label>
+          <textarea id="expComment" rows="3" placeholder="예: 요즘 업무량이 많아서 조금 힘들지만, 팀 분위기는 좋아요"
+            style="width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; resize:vertical;"></textarea>
+          <button class="btn btn-primary" style="margin-top:10px; width:100%; justify-content:center;" id="expSubmitBtn">응답 제출</button>
+          <div class="exp-log" id="expLog"></div>
+        </div>
+        <div class="panel" style="padding:20px;">
+          <div class="section-title" style="padding:0 0 12px;">8주 몰입도 추이</div>
+          <div class="exp-chart" id="expTrendChart"></div>
+          <div class="section-title" style="padding:20px 0 12px;">코멘트 키워드 Top 5</div>
+          <div id="expKeywordList"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:14px; padding:20px;">
+        <div class="section-title" style="padding:0 0 12px;">부서별 eNPS 비교</div>
+        <div id="expDeptList"></div>
+      </div>
+    </section>
+
+    <!-- 근태 이상징후 분석 -->
+    <section id="tab-attrisk" class="tab-panel">
+      <div class="panel-note">
+        근태·연차 관리 탭 임직원 기준 16주 근태 데이터를 pandas로 분석한 결과입니다. 주당 연장근로 10시간 초과가 3주 이상 연속되면 <b>번아웃 위험군</b>으로, 연차를 금·월요일에 몰아 쓰는 패턴이 반복되면 <b>이탈 징후</b>로 표시합니다.
+      </div>
+      <div class="stats-row" style="margin-top:14px;">
+        <div class="stat-card"><div class="label">분석 대상 인원</div><div class="value" id="attTotal">--</div></div>
+        <div class="stat-card warn"><div class="label">번아웃 위험군 비율</div><div class="value" id="attBurnoutRate">--%</div></div>
+        <div class="stat-card warn"><div class="label">이탈 징후 감지 인원</div><div class="value" id="attExitCount">--</div></div>
+      </div>
+
+      <div class="panel" style="margin-top:14px;">
+        <div class="section-title">번아웃 위험군</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>사번</th><th>이름</th><th>부서</th><th>최대 연속 고위험주</th><th>평균 연장근로시간</th><th>위험도</th></tr></thead>
+            <tbody id="attBurnoutBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px;">
+        <div class="section-title">이탈 징후 패턴</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>사번</th><th>이름</th><th>부서</th><th>연차 사용 횟수</th><th>금·월요일 집중 비율</th></tr></thead>
+            <tbody id="attExitBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px; padding:20px;">
+        <div class="section-title" style="padding:0 0 14px;">부서별 몰입도 지표</div>
+        <div class="att-dept-grid">
+          <div>
+            <h3 class="att-dept-h">평균 정시출근율</h3>
+            <div id="attDeptOnTime"></div>
+          </div>
+          <div>
+            <h3 class="att-dept-h">평균 주당 연장근로시간</h3>
+            <div id="attDeptOvertime"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 사내규정 FAQ 챗봇 -->
+    <section id="tab-faq" class="tab-panel">
+      <div class="panel-note">
+        <b>이 챗봇은 실제 OpenAI API를 호출하지 않는 키워드 매칭 기반 데모입니다.</b> 질문에 포함된 단어(연차·경조사비·비품 등)를 인식해 미리 준비된 답변을 보여주는 방식이에요.
+        실제 서비스로 만든다면 GPT API + 사내 규정 문서(취업규칙·복리후생 가이드 등)를 학습시킨 RAG 구조로 구현할 수 있어요. 오른쪽 목록에 있는 질문을 클릭하거나, 직접 입력해서 체험해보세요.
+      </div>
+      <div class="chat-wrap">
+        <div class="chat-panel">
+          <div class="chat-header">
+            <div class="dot"></div>
+            <div class="title">하나솔루션 AI 인사총무 어시스턴트</div>
+            <div class="sub">데모 모드</div>
+          </div>
+          <div class="chat-body" id="chatBody"></div>
+          <div class="chips" id="chatChips"></div>
+          <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="궁금한 점을 입력해보세요 (예: 연차 며칠 전에 신청해야 해?)" />
+            <button class="chat-send-btn" id="chatSendBtn">전송</button>
+          </div>
+        </div>
+        <div class="faq-side">
+          <div class="panel">
+            <div class="panel-note" style="border-bottom:1px solid var(--line); background:#fff;">자주 하는 질문 TOP 8</div>
+            <div id="faqList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="foot-note">※ 전 항목은 가상 임직원 기준 샘플 데이터이며, 값을 직접 수정하거나 엑셀 업로드로 교체할 수 있습니다. 모든 세율·세액·퇴직금 계산은 실무 참고용 간이 추정치입니다.</p>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   1. 데이터 모델
+   ══════════════════════════════════════════════════════════ */
+let employees = [
+  {empId:"EMP001", name:"김서준", dept:"인사총무팀", hireDate:"2021-03-02"},
+  {empId:"EMP002", name:"이하은", dept:"경영지원팀", hireDate:"2022-07-15"},
+  {empId:"EMP003", name:"박도윤", dept:"연구개발팀", hireDate:"2020-01-10"},
+  {empId:"EMP004", name:"최지우", dept:"연구개발팀", hireDate:"2023-02-20"},
+  {empId:"EMP005", name:"정민준", dept:"영업팀",     hireDate:"2019-11-03"},
+  {empId:"EMP006", name:"강서연", dept:"영업팀",     hireDate:"2022-09-01"},
+  {empId:"EMP007", name:"조유준", dept:"품질관리팀", hireDate:"2021-08-18"},
+  {empId:"EMP008", name:"윤아린", dept:"품질관리팀", hireDate:"2023-04-05"},
+  {empId:"EMP009", name:"임태현", dept:"경영지원팀", hireDate:"2018-06-12"},
+  {empId:"EMP010", name:"한소율", dept:"연구개발팀", hireDate:"2022-01-25"},
+];
+
+let attendance = [
+  {empId:"EMP001", stdTime:"09:00", actTime:"08:55", totalLeave:15, usedLeave:4},
+  {empId:"EMP002", stdTime:"09:00", actTime:"09:12", totalLeave:15, usedLeave:9},
+  {empId:"EMP003", stdTime:"09:00", actTime:"09:03", totalLeave:16, usedLeave:2},
+  {empId:"EMP004", stdTime:"09:00", actTime:"09:30", totalLeave:16, usedLeave:11},
+  {empId:"EMP005", stdTime:"09:00", actTime:"08:48", totalLeave:17, usedLeave:6},
+  {empId:"EMP006", stdTime:"09:00", actTime:"09:00", totalLeave:15, usedLeave:0},
+  {empId:"EMP007", stdTime:"09:00", actTime:"09:20", totalLeave:16, usedLeave:8},
+  {empId:"EMP008", stdTime:"09:00", actTime:"09:07", totalLeave:15, usedLeave:3},
+  {empId:"EMP009", stdTime:"09:00", actTime:"08:59", totalLeave:17, usedLeave:15},
+  {empId:"EMP010", stdTime:"09:00", actTime:"09:45", totalLeave:16, usedLeave:5},
+];
+
+// 국민연금요율/고용보험요율은 직원별로 수정 가능(두루누리 지원 등 반영), 건강보험은 고정
+let payroll = [
+  {empId:"EMP001", baseSalary:3200000, includeLeavePay:false, dependents:1, pensionRate:4.75, employmentRate:0.9, prevReportedBase:3080000},
+  {empId:"EMP002", baseSalary:2900000, includeLeavePay:false, dependents:1, pensionRate:4.75, employmentRate:0.9, prevReportedBase:2790000},
+  {empId:"EMP003", baseSalary:4100000, includeLeavePay:false, dependents:2, pensionRate:4.75, employmentRate:0.9, prevReportedBase:4250000},
+  {empId:"EMP004", baseSalary:3800000, includeLeavePay:false, dependents:1, pensionRate:4.75, employmentRate:0.9, prevReportedBase:3660000},
+  {empId:"EMP005", baseSalary:3500000, includeLeavePay:false, dependents:3, pensionRate:4.75, employmentRate:0.9, prevReportedBase:3500000},
+  {empId:"EMP006", baseSalary:3300000, includeLeavePay:false, dependents:1, pensionRate:4.75, employmentRate:0.9, prevReportedBase:3180000},
+  {empId:"EMP007", baseSalary:3600000, includeLeavePay:false, dependents:1, pensionRate:4.75, employmentRate:0.9, prevReportedBase:3470000},
+  {empId:"EMP008", baseSalary:3000000, includeLeavePay:false, dependents:2, pensionRate:2.375, employmentRate:0.45, prevReportedBase:2890000},
+  {empId:"EMP009", baseSalary:4500000, includeLeavePay:false, dependents:4, pensionRate:4.75, employmentRate:0.9, prevReportedBase:4680000},
+  {empId:"EMP010", baseSalary:3100000, includeLeavePay:false, dependents:1, pensionRate:4.75, employmentRate:0.9, prevReportedBase:2990000},
+];
+
+let assets = [
+  {assetNo:"IT-001", kind:"노트북", model:"LG그램 15Z90",   issueDate:"2022-03-02", userId:"EMP003", cycle:36, returned:"미반납"},
+  {assetNo:"IT-002", kind:"노트북", model:"맥북 에어 M2",    issueDate:"2023-07-15", userId:"EMP005", cycle:36, returned:"반납완료"},
+  {assetNo:"IT-003", kind:"모니터", model:"LG 27인치 4K",    issueDate:"2021-05-10", userId:"EMP001", cycle:60, returned:"미반납"},
+  {assetNo:"IT-004", kind:"노트북", model:"삼성 갤럭시북4",  issueDate:"2024-01-20", userId:"EMP008", cycle:36, returned:"미반납"},
+  {assetNo:"IT-005", kind:"모니터", model:"삼성 24인치 FHD", issueDate:"2020-11-03", userId:"EMP009", cycle:60, returned:"미반납"},
+  {assetNo:"IT-006", kind:"노트북", model:"LG그램 16",       issueDate:"2023-09-01", userId:"EMP002", cycle:36, returned:"미반납"},
+  {assetNo:"IT-007", kind:"태블릿", model:"아이패드 에어",   issueDate:"2022-08-18", userId:"EMP006", cycle:24, returned:"반납완료"},
+  {assetNo:"IT-008", kind:"노트북", model:"맥북 프로 14",    issueDate:"2024-04-05", userId:"EMP010", cycle:36, returned:"미반납"},
+  {assetNo:"IT-009", kind:"노트북", model:"LG그램 14",       issueDate:"2024-06-01", userId:"",       cycle:36, returned:"재고"},
+  {assetNo:"IT-010", kind:"모니터", model:"LG 24인치 FHD",   issueDate:"2024-02-15", userId:"",       cycle:60, returned:"재고"},
+  {assetNo:"IT-011", kind:"태블릿", model:"갤럭시탭 S9",     issueDate:"2024-05-10", userId:"",       cycle:24, returned:"재고"},
+];
+
+let evaluations = [
+  {empId:"EMP001", period:"2026년 상반기", goalScore:88, competencyScore:85, prevGrade:"B", comment:"정산 프로세스 자동화 주도, 신입 온보딩 지원 우수"},
+  {empId:"EMP002", period:"2026년 상반기", goalScore:76, competencyScore:80, prevGrade:"B", comment:"신규 업무 적응 양호, 커뮤니케이션 보완 필요"},
+  {empId:"EMP003", period:"2026년 상반기", goalScore:95, competencyScore:91, prevGrade:"A", comment:"핵심 R&D 마일스톤 조기 달성"},
+  {empId:"EMP004", period:"2026년 상반기", goalScore:68, competencyScore:72, prevGrade:"B", comment:"과제 진척 다소 지연, 성장 잠재력 있음"},
+  {empId:"EMP005", period:"2026년 상반기", goalScore:83, competencyScore:79, prevGrade:"B", comment:"영업 목표 근접 달성, 팀 리딩 역량 양호"},
+  {empId:"EMP006", period:"2026년 상반기", goalScore:90, competencyScore:86, prevGrade:"B", comment:"신규 거래처 발굴 성과 우수"},
+  {empId:"EMP007", period:"2026년 상반기", goalScore:60, competencyScore:65, prevGrade:"C", comment:"품질 이슈 대응 지연, 개선 필요"},
+  {empId:"EMP008", period:"2026년 상반기", goalScore:79, competencyScore:81, prevGrade:"B", comment:"품질 검수 프로세스 정착에 기여"},
+  {empId:"EMP009", period:"2026년 상반기", goalScore:97, competencyScore:93, prevGrade:"A", comment:"경영지원 총괄 리더십 우수, 조직 안정화 기여"},
+  {empId:"EMP010", period:"2026년 상반기", goalScore:71, competencyScore:74, prevGrade:"C", comment:"기본기 탄탄, 심화 과제 경험 필요"},
+];
+const EVAL_GRADE_ORDER = {S:5, A:4, B:3, C:2, D:1};
+
+let retirementTypes = {};
+const SAJAE_RATE = 0.007; // 산재보험료율(업종별 상이, 데모용 예시 0.7% - 전액 사업주 부담)
+
+/* ══════════════════════════════════════════════════════════
+   2. 공통 유틸
+   ══════════════════════════════════════════════════════════ */
+const empOf   = (empId) => employees.find(e => e.empId === empId);
+const nameOf  = (empId) => (empOf(empId) || {}).name || "미배정";
+const remainLeaveOf = (empId) => {
+  const a = attendance.find(r => r.empId === empId);
+  return a ? (a.totalLeave - a.usedLeave) : 0;
+};
+function isLate(std, act){ return act > std; }
+function addMonths(dateStr, months){
+  const d = new Date(dateStr);
+  d.setMonth(d.getMonth() + Number(months));
+  return d.toISOString().slice(0,10);
+}
+function yearsBetween(dateStr){
+  const ms = new Date() - new Date(dateStr);
+  return ms / (1000*60*60*24*365.25);
+}
+const fmtNum = (n) => Number(n||0).toLocaleString("ko-KR");
+const today = () => new Date().toISOString().slice(0,10);
+
+/* ══════════════════════════════════════════════════════════
+   2-1. 소득세 계산 로직 (근로소득공제 → 기본세율표 → 근로소득세액공제)
+   국세청이 공개한 근로소득 간이세액표 산출 공식을 단순화해 반영한 근사치입니다.
+   ══════════════════════════════════════════════════════════ */
+function earnedIncomeDeduction(annualGross){
+  const g = annualGross;
+  if (g <= 5000000)   return g*0.7;
+  if (g <= 15000000)  return 3500000 + (g-5000000)*0.4;
+  if (g <= 45000000)  return 7500000 + (g-15000000)*0.15;
+  if (g <= 100000000) return 12000000 + (g-45000000)*0.05;
+  return 14750000 + (g-100000000)*0.02;
+}
+function basicTax(base){
+  const b = Math.max(base, 0);
+  if (b <= 14000000)  return b*0.06;
+  if (b <= 50000000)  return b*0.15 - 1260000;
+  if (b <= 88000000)  return b*0.24 - 5760000;
+  if (b <= 150000000) return b*0.35 - 15440000;
+  if (b <= 300000000) return b*0.38 - 19940000;
+  if (b <= 500000000) return b*0.40 - 25940000;
+  if (b <= 1000000000) return b*0.42 - 35940000;
+  return b*0.45 - 65940000;
+}
+function earnedIncomeTaxCredit(calcTax, annualGross){
+  let credit = calcTax <= 1300000 ? calcTax*0.55 : 715000 + (calcTax-1300000)*0.30;
+  let limit;
+  if (annualGross <= 33000000) limit = 740000;
+  else if (annualGross <= 70000000) limit = Math.max(740000 - (annualGross-33000000)*0.008, 660000);
+  else limit = Math.max(660000 - (annualGross-70000000)*0.5, 500000);
+  return Math.max(Math.min(credit, limit), 0);
+}
+// 월 원천징수세액 추정 (간이세액표 근사) — 부양가족수를 반영
+function estimateMonthlyWithholding(monthlyGross, dependents){
+  const annual = monthlyGross*12;
+  const deduction = earnedIncomeDeduction(annual);
+  const earnedIncomeAmt = Math.max(annual - deduction, 0);
+  const personalDeduction = Math.max(Number(dependents)||1, 1) * 1500000;
+  const base = Math.max(earnedIncomeAmt - personalDeduction, 0);
+  const calcTax = basicTax(base);
+  const credit = earnedIncomeTaxCredit(calcTax, annual);
+  const decided = Math.max(calcTax - credit, 0);
+  return Math.round(decided/12);
+}
+
+/* ══════════════════════════════════════════════════════════
+   3. 렌더링 — 근태
+   ══════════════════════════════════════════════════════════ */
+function renderAttendance(){
+  const body = document.getElementById("attendanceBody");
+  body.innerHTML = attendance.map((row, i) => {
+    const emp = empOf(row.empId) || {};
+    const late = isLate(row.stdTime, row.actTime);
+    const remain = row.totalLeave - row.usedLeave;
+    return `<tr>
+      <td>${row.empId}</td>
+      <td class="name-cell">${emp.name||"-"}</td>
+      <td>${emp.dept||"-"}</td>
+      <td><input type="time" value="${row.stdTime}" onchange="attendance[${i}].stdTime=this.value; renderAll();"></td>
+      <td><input type="time" value="${row.actTime}" onchange="attendance[${i}].actTime=this.value; renderAll();"></td>
+      <td>${late ? '<span class="badge badge-warn">지각</span>' : '<span class="badge badge-ok">정상</span>'}</td>
+      <td><input type="number" value="${row.totalLeave}" min="0" onchange="attendance[${i}].totalLeave=Number(this.value); renderAll();"></td>
+      <td><input type="number" value="${row.usedLeave}" min="0" onchange="attendance[${i}].usedLeave=Number(this.value); renderAll();"></td>
+      <td class="num">${remain}일</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════
+   4. 렌더링 — 급여 (요율 수정 + 간이세액표 기반 원천세)
+   ══════════════════════════════════════════════════════════ */
+function payrollCalc(row){
+  const base = Number(row.baseSalary) || 0;
+  const remain = remainLeaveOf(row.empId);
+  const dailyWage = Math.round(base/30);
+  const leavePay = Math.round(dailyWage * remain);
+  const gross = base + (row.includeLeavePay ? leavePay : 0);
+
+  const np = Math.round(gross * (row.pensionRate/100));
+  const hi = Math.round(gross * 0.03595);          // 건강보험(고정)
+  const lt = Math.round(hi * 0.1314);               // 장기요양보험(고정, 건보료의 13.14%)
+  const ei = Math.round(gross * (row.employmentRate/100));
+  const tax = estimateMonthlyWithholding(gross, row.dependents);
+  const total = np + hi + lt + ei + tax;
+  const net = gross - total;
+
+  return {base, remain, dailyWage, leavePay, gross, np, hi, lt, ei, tax, total, net};
+}
+
+function renderPayroll(){
+  const body = document.getElementById("payrollBody");
+  body.innerHTML = payroll.map((row, i) => {
+    const c = payrollCalc(row);
+    return `<tr>
+      <td>${row.empId}</td>
+      <td class="name-cell">${nameOf(row.empId)}</td>
+      <td><input type="number" class="num" value="${row.baseSalary}" step="10000" onchange="payroll[${i}].baseSalary=Number(this.value); renderAll();"></td>
+      <td><input type="number" value="${row.dependents}" min="1" onchange="payroll[${i}].dependents=Number(this.value); renderAll();"></td>
+      <td class="num">${c.remain}일</td>
+      <td><input type="checkbox" ${row.includeLeavePay?"checked":""} onchange="payroll[${i}].includeLeavePay=this.checked; renderAll();"></td>
+      <td class="num">${fmtNum(row.includeLeavePay ? c.leavePay : 0)}</td>
+      <td class="num" style="font-weight:600;">${fmtNum(c.gross)}</td>
+      <td><input type="number" value="${row.pensionRate}" step="0.05" min="0" onchange="payroll[${i}].pensionRate=Number(this.value); renderAll();"></td>
+      <td class="num">${fmtNum(c.np)}</td>
+      <td class="num fixed-cell">${fmtNum(c.hi)}</td>
+      <td class="num fixed-cell">${fmtNum(c.lt)}</td>
+      <td><input type="number" value="${row.employmentRate}" step="0.05" min="0" onchange="payroll[${i}].employmentRate=Number(this.value); renderAll();"></td>
+      <td class="num">${fmtNum(c.ei)}</td>
+      <td class="num">${fmtNum(c.tax)}</td>
+      <td class="num">${fmtNum(c.total)}</td>
+      <td class="num" style="font-weight:700; color:var(--main);">${fmtNum(c.net)}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════
+   5. 렌더링 — 자산
+   ══════════════════════════════════════════════════════════ */
+let assetKindFilter = "전체";
+
+function computeAssetView(row){
+  const t = today();
+  const dueDate = addMonths(row.issueDate, row.cycle);
+  const dueFlag = dueDate <= t ? "교체필요" : "정상";
+  const inUse = !!row.userId;
+  const status = !inUse ? "재고" : ((dueFlag === "교체필요" || row.returned === "미반납") ? "확인필요" : "정상");
+  return {dueDate, dueFlag, inUse, status};
+}
+function renderAssetFilterOptions(){
+  const sel = document.getElementById("assetFilter");
+  const kinds = ["전체", ...Array.from(new Set(assets.map(a => a.kind)))];
+  sel.innerHTML = kinds.map(k => `<option value="${k}" ${k===assetKindFilter?"selected":""}>${k}</option>`).join("");
+}
+function renderAssetStats(){
+  const total = assets.length;
+  const inUse = assets.filter(a => !!a.userId).length;
+  const unused = total - inUse;
+  const needCheck = assets.filter(a => computeAssetView(a).status === "확인필요").length;
+  document.getElementById("assetStats").innerHTML = `
+    <div class="stat-card"><div class="label">전체 자산</div><div class="value">${total}대</div></div>
+    <div class="stat-card"><div class="label">사용중</div><div class="value">${inUse}대</div></div>
+    <div class="stat-card muted"><div class="label">미사용(재고)</div><div class="value">${unused}대</div></div>
+    <div class="stat-card warn"><div class="label">확인필요</div><div class="value">${needCheck}대</div></div>
+  `;
+}
+function renderAsset(){
+  renderAssetFilterOptions();
+  renderAssetStats();
+  const body = document.getElementById("assetBody");
+  const rows = assets.map((row, i) => ({row, i})).filter(({row}) => assetKindFilter === "전체" || row.kind === assetKindFilter);
+  body.innerHTML = rows.map(({row, i}) => {
+    const {dueDate, dueFlag, status} = computeAssetView(row);
+    const statusBadge = status === "재고" ? '<span class="badge badge-muted">재고</span>'
+      : (status === "확인필요" ? '<span class="badge badge-warn">확인필요</span>' : '<span class="badge badge-ok">정상</span>');
+    const dueBadge = dueFlag === "교체필요" ? '<span class="badge badge-warn">교체필요</span>' : '<span class="badge badge-ok">정상</span>';
+    return `<tr>
+      <td>${row.assetNo}</td>
+      <td>${row.kind}</td>
+      <td>${row.model}</td>
+      <td><input type="date" value="${row.issueDate}" onchange="assets[${i}].issueDate=this.value; renderAll();"></td>
+      <td>
+        <select onchange="assets[${i}].userId=this.value; renderAll();">
+          <option value="" ${row.userId===""?"selected":""}>미배정(재고)</option>
+          ${employees.map(e => `<option value="${e.empId}" ${e.empId===row.userId?"selected":""}>${e.empId}</option>`).join("")}
+        </select>
+      </td>
+      <td class="name-cell">${row.userId ? nameOf(row.userId) : "-"}</td>
+      <td><input type="number" value="${row.cycle}" min="1" onchange="assets[${i}].cycle=Number(this.value); renderAll();"></td>
+      <td>${dueDate}</td>
+      <td>${dueBadge}</td>
+      <td>
+        <select onchange="assets[${i}].returned=this.value; renderAll();">
+          <option ${row.returned==="반납완료"?"selected":""}>반납완료</option>
+          <option ${row.returned==="미반납"?"selected":""}>미반납</option>
+          <option ${row.returned==="재고"?"selected":""}>재고</option>
+        </select>
+      </td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join("");
+}
+document.addEventListener("change", (e) => {
+  if (e.target && e.target.id === "assetFilter"){ assetKindFilter = e.target.value; renderAsset(); }
+});
+
+/* ══════════════════════════════════════════════════════════
+   6. 렌더링 — 퇴직금·연금
+   ══════════════════════════════════════════════════════════ */
+function renderRetirement(){
+  const body = document.getElementById("retirementBody");
+  body.innerHTML = employees.map((emp, i) => {
+    const pay = payroll.find(p => p.empId === emp.empId) || {baseSalary:0};
+    const years = yearsBetween(emp.hireDate);
+    const severance = Math.round(pay.baseSalary * years);
+    const type = retirementTypes[emp.empId] || (i % 2 === 0 ? "DC" : "DB");
+    retirementTypes[emp.empId] = type;
+    const dcAnnual = type === "DC" ? pay.baseSalary : 0;
+    return `<tr>
+      <td>${emp.empId}</td>
+      <td class="name-cell">${emp.name}</td>
+      <td><input type="date" value="${emp.hireDate}" onchange="employees[${i}].hireDate=this.value; renderAll();"></td>
+      <td class="num">${years.toFixed(1)}년</td>
+      <td class="num">${fmtNum(pay.baseSalary)}</td>
+      <td class="num" style="font-weight:700; color:var(--main);">${fmtNum(severance)}</td>
+      <td>
+        <select onchange="retirementTypes['${emp.empId}']=this.value; renderRetirement();">
+          <option ${type==="DC"?"selected":""}>DC</option>
+          <option ${type==="DB"?"selected":""}>DB</option>
+        </select>
+      </td>
+      <td class="num">${type==="DC" ? fmtNum(dcAnnual) : "-"}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════
+   7. 렌더링 — 연말정산 · 보수총액신고
+   ══════════════════════════════════════════════════════════ */
+function renderYearEnd(){
+  const body = document.getElementById("yearEndTaxBody");
+  body.innerHTML = payroll.map(row => {
+    const c = payrollCalc(row);
+    const annualGross = row.baseSalary * 12; // 단순화: 월 기본급 × 12 (연차수당·상여 등 실제 변동분은 미반영)
+    const deduction = earnedIncomeDeduction(annualGross);
+    const earnedIncomeAmt = Math.max(annualGross - deduction, 0);
+    const personalDeduction = Math.max(row.dependents,1) * 1500000;
+    const insuranceDeduction = (c.np + c.hi + c.lt + c.ei) * 12; // 4대보험료 연간 소득공제
+    const taxBase = Math.max(earnedIncomeAmt - personalDeduction - insuranceDeduction, 0);
+    const calcTax = basicTax(taxBase);
+    const earnedCredit = earnedIncomeTaxCredit(calcTax, annualGross);
+    const standardCredit = 130000; // 표준세액공제(다른 특별공제 미신청 가정, 데모 고정값)
+    const totalCredit = earnedCredit + standardCredit;
+    const decidedTax = Math.max(calcTax - totalCredit, 0);
+    const prepaid = c.tax * 12;
+    const refund = prepaid - decidedTax;
+
+    return `<tr>
+      <td>${row.empId}</td>
+      <td class="name-cell">${nameOf(row.empId)}</td>
+      <td class="num">${fmtNum(annualGross)}</td>
+      <td class="num">${fmtNum(Math.round(deduction))}</td>
+      <td class="num">${fmtNum(Math.round(earnedIncomeAmt))}</td>
+      <td class="num">${fmtNum(personalDeduction)}</td>
+      <td class="num">${fmtNum(Math.round(insuranceDeduction))}</td>
+      <td class="num">${fmtNum(Math.round(taxBase))}</td>
+      <td class="num">${fmtNum(Math.round(calcTax))}</td>
+      <td class="num">${fmtNum(Math.round(totalCredit))}</td>
+      <td class="num" style="font-weight:600;">${fmtNum(Math.round(decidedTax))}</td>
+      <td class="num">${fmtNum(prepaid)}</td>
+      <td class="num" style="font-weight:700; color:${refund>=0?'var(--main)':'var(--danger)'};">
+        ${refund>=0 ? '환급 ' : '추가납부 '}${fmtNum(Math.abs(Math.round(refund)))}
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function renderRemuneration(){
+  const body = document.getElementById("remunerationBody");
+  body.innerHTML = payroll.map((row, i) => {
+    const estimatedAnnual = row.prevReportedBase * 12;
+    const confirmedAnnual = row.baseSalary * 12;
+    const diff = confirmedAnnual - estimatedAnnual;
+    const empInsuranceDiff = Math.round(diff * (row.employmentRate/100));
+    const injuryInsuranceDiff = Math.round(diff * SAJAE_RATE);
+    let resultLabel, resultColor;
+    if (diff > 0){ resultLabel = "추가납부 " + fmtNum(empInsuranceDiff + injuryInsuranceDiff); resultColor = "var(--danger)"; }
+    else if (diff < 0){ resultLabel = "환급 " + fmtNum(Math.abs(empInsuranceDiff + injuryInsuranceDiff)); resultColor = "var(--main)"; }
+    else { resultLabel = "변동없음"; resultColor = "var(--gray-text)"; }
+
+    return `<tr>
+      <td>${row.empId}</td>
+      <td class="name-cell">${nameOf(row.empId)}</td>
+      <td><input type="number" class="num" value="${row.prevReportedBase}" step="10000" onchange="payroll[${i}].prevReportedBase=Number(this.value); renderAll();"></td>
+      <td class="num">${fmtNum(estimatedAnnual)}</td>
+      <td class="num">${fmtNum(confirmedAnnual)}</td>
+      <td class="num">${fmtNum(diff)}</td>
+      <td class="num">${fmtNum(empInsuranceDiff)}</td>
+      <td class="num">${fmtNum(injuryInsuranceDiff)}</td>
+      <td class="num" style="font-weight:700; color:${resultColor};">${resultLabel}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════
+   7-1. 인사평가 관리
+   ══════════════════════════════════════════════════════════ */
+function evalGrade(score){
+  if (score>=90) return "S";
+  if (score>=80) return "A";
+  if (score>=70) return "B";
+  if (score>=60) return "C";
+  return "D";
+}
+function evalCalc(row){
+  const score = Math.round(row.goalScore*0.6 + row.competencyScore*0.4);
+  const grade = evalGrade(score);
+  const diff = EVAL_GRADE_ORDER[grade] - EVAL_GRADE_ORDER[row.prevGrade];
+  return {score, grade, diff};
+}
+function renderEvaluation(){
+  const body = document.getElementById("evaluationBody");
+  if (!body) return;
+  body.innerHTML = evaluations.map((row, i) => {
+    const emp = empOf(row.empId) || {};
+    const c = evalCalc(row);
+    const diffLabel = c.diff>0 ? "▲ 상승" : (c.diff<0 ? "▼ 하락" : "- 유지");
+    const diffColor = c.diff>0 ? "var(--main)" : (c.diff<0 ? "var(--danger)" : "var(--gray-text)");
+    const gradeCls = (c.grade==="S"||c.grade==="A") ? "badge-ok" : (c.grade==="D" ? "badge-warn" : "badge-muted");
+    return `<tr>
+      <td>${row.empId}</td><td class="name-cell">${emp.name||"-"}</td><td>${emp.dept||"-"}</td>
+      <td>${row.period}</td>
+      <td><input type="number" class="num" value="${row.goalScore}" min="0" max="100" onchange="evaluations[${i}].goalScore=Number(this.value); renderAll();"></td>
+      <td><input type="number" class="num" value="${row.competencyScore}" min="0" max="100" onchange="evaluations[${i}].competencyScore=Number(this.value); renderAll();"></td>
+      <td class="num" style="font-weight:700;">${c.score}점</td>
+      <td><span class="badge ${gradeCls}">${c.grade}</span></td>
+      <td>${row.prevGrade}</td>
+      <td style="color:${diffColor}; font-weight:700;">${diffLabel}</td>
+      <td style="text-align:left; white-space:normal; font-size:12px; color:var(--gray-text); min-width:200px;">${row.comment}</td>
+    </tr>`;
+  }).join("");
+  renderEvalDistribution();
+  updateEvalKPI();
+}
+function renderEvalDistribution(){
+  const el = document.getElementById("evalDistChart");
+  if (!el) return;
+  const counts = {S:0, A:0, B:0, C:0, D:0};
+  evaluations.forEach(row => { counts[evalCalc(row).grade]++; });
+  const max = Math.max(...Object.values(counts), 1);
+  const colors = {S:"#1E40AF", A:"#3B82F6", B:"#64748B", C:"#D97706", D:"#DC2626"};
+  el.innerHTML = ["S","A","B","C","D"].map(g => `
+    <div class="att-bar-row">
+      <div class="att-bar-label"><span>${g}등급</span><span>${counts[g]}명</span></div>
+      <div class="att-bar-track"><div class="att-bar-fill" style="width:${counts[g]/max*100}%; background:${colors[g]};"></div></div>
+    </div>`).join("");
+}
+function updateEvalKPI(){
+  const calcs = evaluations.map(evalCalc);
+  const avg = calcs.reduce((s,c) => s+c.score, 0) / (calcs.length||1);
+  const topRate = Math.round(calcs.filter(c => c.grade==="S"||c.grade==="A").length / (calcs.length||1) * 100);
+  const upCount = calcs.filter(c => c.diff>0).length;
+  document.getElementById("evalAvgScore").textContent = avg.toFixed(1) + "점";
+  document.getElementById("evalTopRate").textContent = topRate + "%";
+  document.getElementById("evalUpCount").textContent = upCount + "명";
+}
+
+function renderAll(){
+  renderAttendance(); renderPayroll(); renderAsset(); renderRetirement();
+  renderYearEnd(); renderRemuneration(); renderEvaluation();
+}
+
+/* ══════════════════════════════════════════════════════════
+   8. 탭 전환
+   ══════════════════════════════════════════════════════════ */
+const tabInfo = {
+  attendance: {title:"근태·연차 관리", desc:"실제 출근시각과 사용 연차를 입력하면 지각여부·잔여연차가 자동으로 계산됩니다."},
+  payroll:    {title:"급여대장", desc:"기본급을 입력하면 4대보험 공제액과 실수령액이 자동으로 계산됩니다. 국민연금·고용보험 요율은 직접 수정할 수 있습니다."},
+  proration:  {title:"중도입퇴사 일할계산기", desc:"입사일·퇴사일만 입력하면 세전 급여와 4대보험 일할 정산액이 자동으로 산출됩니다."},
+  asset:      {title:"자산·비품 관리", desc:"지급일자·교체주기를 입력하면 교체예정일과 확인 필요 여부가 자동으로 계산됩니다."},
+  retirement: {title:"퇴직금·연금", desc:"입사일 기준 근속연수로 퇴직금 추정액과 DC형 퇴직연금 연간 적립액을 계산합니다."},
+  yearend:    {title:"연말정산·보수총액신고", desc:"1년치 소득세 정산(연말정산)과 고용·산재보험료 정산(보수총액신고)을 추정합니다."},
+  evaluation: {title:"인사평가 관리", desc:"목표달성도·역량평가 점수로 종합등급(S~D)을 자동 산출하고, 전기 대비 등급 변동을 관리합니다."},
+  faq:        {title:"사내규정 FAQ 챗봇", desc:"연차·경조사비·비품 신청 등 자주 묻는 질문에 키워드 매칭으로 답변하는 데모입니다."},
+  turnover:   {title:"퇴사 위험도 예측", desc:"근태·평가·보상 데이터를 로지스틱 회귀 모델(Scikit-learn)에 학습시켜 산출한 가중치로 퇴사 위험도를 계산합니다."},
+  experience: {title:"직원경험 데이터", desc:"매주 펄스 서베이 응답을 키워드 기반으로 감정 분석해, 조직의 몰입도 흐름을 데이터로 관리합니다."},
+  attrisk:    {title:"근태 이상징후 분석", desc:"12~16주 근태 데이터를 분석해 번아웃 위험군과 이탈 징후 패턴을 자동으로 탐지합니다."},
+};
+document.querySelectorAll(".nav-section-label").forEach(label => {
+  label.addEventListener("click", () => {
+    label.closest(".nav-group").classList.toggle("collapsed");
+  });
+});
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    item.classList.add("active");
+    const tab = item.dataset.tab;
+    document.getElementById("tab-" + tab).classList.add("active");
+    document.getElementById("pageTitle").textContent = tabInfo[tab].title;
+    document.getElementById("pageDesc").textContent = tabInfo[tab].desc;
+  });
+});
+
+/* ══════════════════════════════════════════════════════════
+   9. 엑셀 다운로드
+   ══════════════════════════════════════════════════════════ */
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+document.getElementById("downloadBtn").addEventListener("click", () => {
+  const wb = XLSX.utils.book_new();
+
+  const attRows = attendance.map(r => {
+    const emp = empOf(r.empId) || {};
+    return {
+      "사번": r.empId, "이름": emp.name, "부서": emp.dept, "입사일": emp.hireDate,
+      "정규출근시각": r.stdTime, "실제출근시각": r.actTime,
+      "지각여부": isLate(r.stdTime, r.actTime) ? "지각" : "정상",
+      "연간부여연차(일)": r.totalLeave, "사용연차(일)": r.usedLeave, "잔여연차(일)": r.totalLeave - r.usedLeave,
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "1.근태_연차현황");
+
+  const payRows = payroll.map(r => {
+    const c = payrollCalc(r);
+    return {
+      "사번": r.empId, "이름": nameOf(r.empId), "기본급": r.baseSalary, "부양가족수": r.dependents,
+      "잔여연차(일)": c.remain, "연차수당포함": r.includeLeavePay ? "Y" : "N", "연차수당": r.includeLeavePay ? c.leavePay : 0,
+      "지급총액": c.gross, "국민연금요율(%)": r.pensionRate, "국민연금": c.np, "건강보험": c.hi, "장기요양보험": c.lt,
+      "고용보험요율(%)": r.employmentRate, "고용보험": c.ei, "원천세(간이세액)": c.tax, "공제합계": c.total, "실수령액": c.net,
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(payRows), "2.급여대장_실수령액");
+
+  const assetRows = assets.map(r => {
+    const {dueDate, dueFlag, status} = computeAssetView(r);
+    return {
+      "자산번호": r.assetNo, "자산종류": r.kind, "모델명": r.model, "지급일자": r.issueDate,
+      "사용자 사번": r.userId, "사용자(이름)": r.userId ? nameOf(r.userId) : "", "교체주기(개월)": r.cycle,
+      "교체예정일": dueDate, "교체도래여부": dueFlag, "반납여부": r.returned, "상태(종합판정)": status,
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(assetRows), "3.자산_비품관리");
+
+  const retireRows = employees.map(emp => {
+    const pay = payroll.find(p => p.empId === emp.empId) || {baseSalary:0};
+    const years = yearsBetween(emp.hireDate);
+    const type = retirementTypes[emp.empId] || "DC";
+    return {
+      "사번": emp.empId, "이름": emp.name, "입사일": emp.hireDate, "근속연수(년)": Number(years.toFixed(1)),
+      "기본급(월)": pay.baseSalary, "퇴직금추정액": Math.round(pay.baseSalary*years),
+      "퇴직연금유형": type, "연간적립액추정(DC)": type==="DC" ? pay.baseSalary : 0,
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(retireRows), "4.퇴직금_퇴직연금");
+
+  const evalRows = evaluations.map(row => {
+    const emp = empOf(row.empId) || {};
+    const c = evalCalc(row);
+    return {
+      "사번": row.empId, "이름": emp.name, "부서": emp.dept, "평가기간": row.period,
+      "목표달성도": row.goalScore, "역량평가": row.competencyScore, "종합점수": c.score,
+      "종합등급": c.grade, "전기등급": row.prevGrade,
+      "등급변동": c.diff>0 ? "상승" : (c.diff<0 ? "하락" : "유지"), "평가코멘트": row.comment,
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(evalRows), "5.인사평가");
+
+  XLSX.writeFile(wb, "인사총무_통합_자동화_데모.xlsx");
+  showToast("엑셀 파일이 다운로드되었습니다.");
+});
+
+/* ══════════════════════════════════════════════════════════
+   10. 엑셀 업로드
+   ══════════════════════════════════════════════════════════ */
+function genEmpId(name, index){ return "TMP" + String(index+1).padStart(3,"0") + "_" + name; }
+
+function tryParseStructured(wb){
+  let matched = false;
+  const s1 = wb.Sheets["1.근태_연차현황"];
+  if (s1){
+    const rows = XLSX.utils.sheet_to_json(s1);
+    if (rows.length){
+      matched = true;
+      const seen = new Set();
+      employees = rows.map(r => ({
+        empId:String(r["사번"]), name:r["이름"], dept:r["부서"]||"-",
+        hireDate: r["입사일"] ? String(r["입사일"]).slice(0,10) : "2023-01-01",
+      })).filter(e => !seen.has(e.empId) && seen.add(e.empId));
+      attendance = rows.map(r => ({
+        empId: String(r["사번"]), stdTime: r["정규출근시각"] || "09:00", actTime: r["실제출근시각"] || "09:00",
+        totalLeave: Number(r["연간부여연차(일)"]) || 0, usedLeave: Number(r["사용연차(일)"]) || 0,
+      }));
+    }
+  }
+  const s2 = wb.Sheets["2.급여대장_실수령액"];
+  if (s2){
+    const rows = XLSX.utils.sheet_to_json(s2);
+    if (rows.length){
+      matched = true;
+      payroll = rows.map(r => ({
+        empId:String(r["사번"]), baseSalary:Number(r["기본급"])||0,
+        includeLeavePay: (r["연차수당포함"]==="Y"),
+        dependents: Number(r["부양가족수"])||1,
+        pensionRate: r["국민연금요율(%)"]!==undefined ? Number(r["국민연금요율(%)"]) : 4.75,
+        employmentRate: r["고용보험요율(%)"]!==undefined ? Number(r["고용보험요율(%)"]) : 0.9,
+        prevReportedBase: Number(r["기본급"])||0,
+      }));
+    }
+  }
+  const s3 = wb.Sheets["3.자산_비품관리"];
+  if (s3){
+    const rows = XLSX.utils.sheet_to_json(s3);
+    if (rows.length){
+      matched = true;
+      assets = rows.map(r => ({
+        assetNo:r["자산번호"], kind:r["자산종류"], model:r["모델명"],
+        issueDate: (r["지급일자"] instanceof Date) ? r["지급일자"].toISOString().slice(0,10) : String(r["지급일자"]),
+        userId:String(r["사용자 사번"]||""), cycle:Number(r["교체주기(개월)"])||36,
+        returned:r["반납여부"]|| (r["사용자 사번"] ? "미반납" : "재고"),
+      }));
+    }
+  }
+  const s4 = wb.Sheets["4.퇴직금_퇴직연금"];
+  if (s4){
+    const rows = XLSX.utils.sheet_to_json(s4);
+    rows.forEach(r => { if (r["사번"] && r["퇴직연금유형"]) retirementTypes[String(r["사번"])] = r["퇴직연금유형"]; });
+  }
+  const s5 = wb.Sheets["5.인사평가"];
+  if (s5){
+    const rows = XLSX.utils.sheet_to_json(s5);
+    if (rows.length){
+      matched = true;
+      evaluations = rows.map(r => ({
+        empId: String(r["사번"]), period: r["평가기간"] || "2026년 상반기",
+        goalScore: Number(r["목표달성도"]) || 0, competencyScore: Number(r["역량평가"]) || 0,
+        prevGrade: r["전기등급"] || "B", comment: r["평가코멘트"] || "",
+      }));
+    }
+  }
+  return matched;
+}
+
+function tryParseSimplePayroll(wb){
+  const sheetName = wb.SheetNames[0];
+  if (!sheetName) return false;
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+  if (!rows.length) return false;
+  const headers = Object.keys(rows[0]);
+  const nameKey = headers.find(h => ["이름","성명","직원명"].includes(h));
+  const salaryKey = headers.find(h => ["급여","기본급","월급","연봉","급여(월)"].includes(h));
+  if (!nameKey || !salaryKey) return false;
+  const isAnnual = salaryKey === "연봉";
+  rows.forEach((r) => {
+    const name = String(r[nameKey]).trim();
+    let salary = Number(r[salaryKey]) || 0;
+    if (isAnnual) salary = Math.round(salary/12);
+    if (!name || !salary) return;
+    let emp = employees.find(e => e.name === name);
+    if (!emp){
+      emp = {empId: genEmpId(name, employees.length), name, dept:"-", hireDate:"2023-01-01"};
+      employees.push(emp);
+      attendance.push({empId:emp.empId, stdTime:"09:00", actTime:"09:00", totalLeave:15, usedLeave:0});
+    }
+    let pr = payroll.find(p => p.empId === emp.empId);
+    if (!pr){
+      pr = {empId:emp.empId, baseSalary:0, includeLeavePay:false, dependents:1, pensionRate:4.75, employmentRate:0.9, prevReportedBase:0};
+      payroll.push(pr);
+    }
+    pr.baseSalary = salary;
+    if (!pr.prevReportedBase) pr.prevReportedBase = salary;
+  });
+  return true;
+}
+
+document.getElementById("fileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try{
+      const wb = XLSX.read(evt.target.result, {type:"array"});
+      const structured = tryParseStructured(wb);
+      if (!structured){
+        const simple = tryParseSimplePayroll(wb);
+        if (!simple){ showToast("인식 가능한 컬럼(사번/이름/기본급 등)을 찾지 못했습니다."); return; }
+        showToast("이름·급여 데이터를 급여대장에 반영했습니다.");
+      } else {
+        showToast("엑셀 데이터를 불러왔습니다.");
+      }
+      renderAll();
+    }catch(err){
+      showToast("업로드 실패: 파일 형식을 확인해주세요.");
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = "";
+});
+
+/* ══════════════════════════════════════════════════════════
+   12. 중도입퇴사 일할계산기
+   ══════════════════════════════════════════════════════════ */
+function daysInMonth(yearMonth){ // "YYYY-MM"
+  const [y, m] = yearMonth.split("-").map(Number);
+  return new Date(y, m, 0).getDate();
+}
+
+function initProrationCalc(){
+  const sel = document.getElementById("prEmp");
+  sel.innerHTML = employees.map(e => `<option value="${e.empId}">${e.empId} · ${e.name}</option>`).join("");
+
+  const monthInput = document.getElementById("prMonth");
+  const t = new Date();
+  monthInput.value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}`;
+
+  function syncBase(){
+    const emp = sel.value;
+    const pr = payroll.find(p => p.empId === emp);
+    document.getElementById("prBase").value = pr ? pr.baseSalary : 3000000;
+  }
+  sel.addEventListener("change", syncBase);
+  syncBase();
+
+  document.getElementById("prCalcBtn").addEventListener("click", runProrationCalc);
+}
+
+function runProrationCalc(){
+  const ym = document.getElementById("prMonth").value;
+  if (!ym){ showToast("정산 대상 연월을 선택해주세요."); return; }
+  const totalDays = daysInMonth(ym);
+  const [y, m] = ym.split("-").map(Number);
+  const monthStart = new Date(y, m-1, 1);
+  const monthEnd = new Date(y, m, 0);
+
+  const hireVal = document.getElementById("prHireDate").value;
+  const leaveVal = document.getElementById("prLeaveDate").value;
+  const startDate = hireVal ? new Date(hireVal) : monthStart;
+  const endDate = leaveVal ? new Date(leaveVal) : monthEnd;
+
+  const workDays = Math.max(Math.round((endDate - startDate) / (1000*60*60*24)) + 1, 0);
+  const ratio = Math.min(workDays / totalDays, 1);
+
+  const emp = document.getElementById("prEmp").value;
+  const pr = payroll.find(p => p.empId === emp) || { pensionRate:4.75, employmentRate:0.9 };
+  const base = Number(document.getElementById("prBase").value) || 0;
+
+  const basePay = Math.round(base * ratio);
+  const np = Math.round(basePay * (pr.pensionRate/100));
+  const hi = Math.round(basePay * 0.03595);
+  const lt = Math.round(hi * 0.1314);
+  const ei = Math.round(basePay * (pr.employmentRate/100));
+  const net = basePay - (np+hi+lt+ei);
+
+  document.getElementById("prTotalDays").textContent = totalDays + "일";
+  document.getElementById("prWorkDays").textContent = workDays + "일";
+  document.getElementById("prRatio").textContent = (ratio*100).toFixed(1) + "%";
+  document.getElementById("prBasePay").textContent = fmtNum(basePay) + "원";
+  document.getElementById("prNp").textContent = fmtNum(np) + "원";
+  document.getElementById("prHi").textContent = fmtNum(hi) + "원";
+  document.getElementById("prLt").textContent = fmtNum(lt) + "원";
+  document.getElementById("prEi").textContent = fmtNum(ei) + "원";
+  document.getElementById("prNet").textContent = fmtNum(net) + "원";
+}
+initProrationCalc();
+
+/* ══════════════════════════════════════════════════════════
+   13. 사내규정 FAQ 챗봇 (키워드 매칭 데모 — 실제 API 호출 없음)
+   ══════════════════════════════════════════════════════════ */
+const FAQ_DB = [
+  {
+    keywords: ["연차", "휴가"],
+    q: "연차는 며칠 전까지 신청해야 하나요?",
+    a: "취업규칙 제18조에 따라 연차는 사용 예정일 최소 3일 전까지 사내 그룹웨어로 상신해주셔야 해요. 당일·긴급 연차는 팀장 구두 승인 후 익일까지 사후 상신이 가능합니다.",
+  },
+  {
+    keywords: ["잔여연차", "연차 몇", "연차 남"],
+    q: "제 잔여 연차가 며칠인지 확인하려면요?",
+    a: "잔여 연차는 [근태·연차 관리] 탭에서 본인 사번으로 바로 확인하실 수 있어요. 연간 부여 연차에서 사용 연차를 뺀 값이 실시간으로 계산돼요.",
+  },
+  {
+    keywords: ["경조사", "경조금", "부고", "결혼"],
+    q: "경조사비 신청은 어떻게 하나요?",
+    a: "복리후생 규정 제7조에 따라 본인 결혼·출산, 가족 경조사 시 경조사비가 지급돼요. 경조사 발생일로부터 7일 이내에 증빙서류(청첩장·가족관계증명서 등)와 함께 경조사비 신청서를 인사총무팀에 제출해주시면 돼요.",
+  },
+  {
+    keywords: ["비품", "소모품", "노트북 신청", "모니터"],
+    q: "비품(노트북·모니터 등) 신청 서식은 어디서 받나요?",
+    a: "비품 신청서는 사내 그룹웨어 [총무 - 서식함]에서 다운로드하실 수 있어요. 작성 후 팀장 결재를 받으면 총무팀에서 재고 확인 후 지급 일정을 안내드려요. 현재 재고 현황은 [자산·비품 관리] 탭에서도 확인 가능해요.",
+  },
+  {
+    keywords: ["재택", "원격근무", "재택근무"],
+    q: "재택근무 신청 기준이 어떻게 되나요?",
+    a: "재택근무 지침 제3조에 따라 월 4회 이내에서 팀장 사전 승인을 받아 사용하실 수 있어요. 신청은 최소 1일 전까지 그룹웨어로 상신해주시면 됩니다.",
+  },
+  {
+    keywords: ["출장", "교통비", "출장비"],
+    q: "출장비·교통비는 어떻게 정산하나요?",
+    a: "출장 종료일로부터 5영업일 이내에 법인카드 사용내역 또는 영수증을 첨부해 경비 정산 시스템에 등록해주시면 돼요. 대중교통은 실비, 자차 이용 시에는 사내 규정상 km당 정액으로 지급돼요.",
+  },
+  {
+    keywords: ["퇴사", "퇴직", "사직"],
+    q: "퇴사 절차와 필요 서류가 궁금해요.",
+    a: "퇴사 최소 30일 전 사직서를 팀장·인사총무팀에 제출해주시면 돼요. 이후 인수인계, 회사 자산 반납([자산·비품 관리] 탭에서 반납여부 확인), 4대보험 상실신고, 퇴직금 정산([퇴직금·연금] 탭 참고) 순으로 처리됩니다.",
+  },
+  {
+    keywords: ["급여명세서", "명세서", "급여일"],
+    q: "급여명세서는 언제, 어디서 확인하나요?",
+    a: "급여일(매월 25일) 당일 사내 그룹웨어 [급여명세서] 메뉴에 개인별로 게시돼요. 상세 공제 내역은 [급여대장] 탭에서 계산 구조를 참고하실 수 있어요.",
+  },
+];
+
+function faqAnswer(text){
+  const t = text.trim();
+  if (!t) return null;
+  const hit = FAQ_DB.find(item => item.keywords.some(k => t.includes(k)));
+  if (hit) return hit.a;
+  return "죄송해요, 아직 학습되지 않은 질문이에요 🙏 연차·경조사비·비품·재택근무·출장비·퇴사·급여명세서 관련 질문을 시도해보시거나, 인사총무팀으로 직접 문의해주세요.";
+}
+
+function appendMsg(role, text){
+  const body = document.getElementById("chatBody");
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.textContent = text;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function sendChat(text){
+  if (!text || !text.trim()) return;
+  appendMsg("user", text);
+  document.getElementById("chatInput").value = "";
+  setTimeout(() => { appendMsg("ai", faqAnswer(text)); }, 350);
+}
+
+function initFaqChat(){
+  appendMsg("ai", "안녕하세요! 하나솔루션 AI 인사총무 어시스턴트예요 🙂\n연차, 경조사비, 비품 신청 등 사내 규정이 궁금하시면 편하게 물어보세요.");
+
+  const chipsWrap = document.getElementById("chatChips");
+  chipsWrap.innerHTML = FAQ_DB.slice(0, 5).map((item, i) => `<div class="chip" data-idx="${i}">${item.q}</div>`).join("");
+  chipsWrap.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => sendChat(FAQ_DB[Number(chip.dataset.idx)].q));
+  });
+
+  const listWrap = document.getElementById("faqList");
+  listWrap.innerHTML = FAQ_DB.map((item, i) => `<div class="faq-list-item" data-idx="${i}"><span class="q-tag">Q${i+1}.</span>${item.q}</div>`).join("");
+  listWrap.querySelectorAll(".faq-list-item").forEach(el => {
+    el.addEventListener("click", () => sendChat(FAQ_DB[Number(el.dataset.idx)].q));
+  });
+
+  document.getElementById("chatSendBtn").addEventListener("click", () => sendChat(document.getElementById("chatInput").value));
+  document.getElementById("chatInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendChat(e.target.value);
+  });
+}
+initFaqChat();
+
+/* ══════════════════════════════════════════════════════════
+   14. 퇴사 위험도 예측 (로지스틱 회귀 가중치 이식)
+   ══════════════════════════════════════════════════════════ */
+// Python(pandas/scikit-learn)으로 가상 직원 800명 데이터를 학습시킨 로지스틱 회귀 결과 가중치
+// (AUC 0.866 / turnover_prediction.py 산출)
+const RISK_WEIGHTS = {
+  tenure:        -0.0252,
+  overtime:       1.1592,
+  leave:         -1.6907,
+  leaveSplit:     1.3252,
+  evalscore:     -0.9412,
+  salary:        -3.9577,
+  commute:        0.0322,
+  managerChange:  0.2188,
+  intercept:     -1.8242
+};
+const RISK_FACTOR_LABEL = {
+  tenure:"근속연수", overtime:"최근 야근시간 증가", leave:"연차 사용률",
+  leaveSplit:"연차 금/월요일 몰아쓰기", evalscore:"평가등급 변화",
+  salary:"급여 인상률", commute:"출퇴근 거리", managerChange:"매니저 변경"
+};
+const riskEls = {
+  tenure: document.getElementById('r-tenure'), overtime: document.getElementById('r-overtime'),
+  leave: document.getElementById('r-leave'), evalscore: document.getElementById('r-evalscore'),
+  salary: document.getElementById('r-salary'), commute: document.getElementById('r-commute'),
+  leaveSplit: document.getElementById('r-leaveSplit'), managerChange: document.getElementById('r-managerChange'),
+};
+const riskSigmoid = x => 1/(1+Math.exp(-x));
+const overtimeLabel = v => v<=-2?"대폭 감소":v<0?"감소":v===0?"보통":v<2?"증가":"대폭 증가";
+const evalScoreLabel = v => v<=-2?"크게 하락":v<0?"하락":v===0?"변동 없음":v<2?"상승":"크게 상승";
+
+function computeRisk(){
+  const tenure = parseFloat(riskEls.tenure.value);
+  const overtime = parseFloat(riskEls.overtime.value);
+  const leaveRate = parseFloat(riskEls.leave.value)/100;
+  const evalscore = parseFloat(riskEls.evalscore.value);
+  const salaryRate = parseFloat(riskEls.salary.value)/100;
+  const commute = parseFloat(riskEls.commute.value);
+  const leaveSplit = riskEls.leaveSplit.checked ? 1 : 0;
+  const managerChange = riskEls.managerChange.checked ? 1 : 0;
+
+  document.getElementById('rv-tenure').textContent = tenure.toFixed(1)+"년";
+  document.getElementById('rv-overtime').textContent = overtimeLabel(overtime);
+  document.getElementById('rv-leave').textContent = Math.round(leaveRate*100)+"%";
+  document.getElementById('rv-eval').textContent = evalScoreLabel(evalscore);
+  document.getElementById('rv-salary').textContent = (salaryRate*100).toFixed(1)+"%";
+  document.getElementById('rv-commute').textContent = commute.toFixed(1)+"km";
+
+  const contributions = {
+    tenure: RISK_WEIGHTS.tenure*tenure, overtime: RISK_WEIGHTS.overtime*overtime,
+    leave: RISK_WEIGHTS.leave*leaveRate, leaveSplit: RISK_WEIGHTS.leaveSplit*leaveSplit,
+    evalscore: RISK_WEIGHTS.evalscore*evalscore, salary: RISK_WEIGHTS.salary*salaryRate,
+    commute: RISK_WEIGHTS.commute*commute, managerChange: RISK_WEIGHTS.managerChange*managerChange,
+  };
+  const logit = RISK_WEIGHTS.intercept + Object.values(contributions).reduce((a,b)=>a+b,0);
+  const risk = riskSigmoid(logit);
+  const pct = Math.round(risk*100);
+  document.getElementById('riskPct').textContent = pct+"%";
+
+  const tag = document.getElementById('riskTag');
+  let tagText, tagBg, tagColor, arcColor;
+  if(pct<25){tagText="위험도 낮음"; tagBg="#DCFCE7"; tagColor="#16A34A"; arcColor="#16A34A";}
+  else if(pct<50){tagText="위험도 보통"; tagBg="#FEF3C7"; tagColor="#D97706"; arcColor="#D97706";}
+  else if(pct<75){tagText="위험도 높음"; tagBg="#FFEDD5"; tagColor="#EA580C"; arcColor="#EA580C";}
+  else {tagText="위험도 매우 높음"; tagBg="#FEE2E2"; tagColor="#DC2626"; arcColor="#DC2626";}
+  tag.textContent = tagText; tag.style.background = tagBg; tag.style.color = tagColor;
+
+  const arc = document.getElementById('riskGaugeArc');
+  const circumference = 2*Math.PI*78*(270/360);
+  arc.setAttribute('stroke-dasharray', circumference);
+  arc.setAttribute('stroke-dashoffset', circumference*(1-risk));
+  arc.setAttribute('stroke', arcColor);
+
+  const sorted = Object.entries(contributions).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,3);
+  const maxAbs = Math.max(...sorted.map(([,v])=>Math.abs(v)), 0.001);
+  document.getElementById('riskFactorList').innerHTML = sorted.map(([key,val])=>{
+    const widthPct = Math.min(100, Math.abs(val)/maxAbs*100);
+    const arrow = val>0 ? '▲ 위험 증가' : '▼ 위험 감소';
+    const color = val>0 ? '#DC2626' : '#16A34A';
+    return `<div class="risk-factor-row">
+      <span>${RISK_FACTOR_LABEL[key]}</span>
+      <span class="risk-factor-bar"><span class="risk-factor-bar-fill" style="width:${widthPct}%; background:${color};"></span></span>
+      <span style="color:${color}; font-weight:700;">${arrow}</span>
+    </div>`;
+  }).join('');
+}
+Object.values(riskEls).forEach(el => el.addEventListener('input', computeRisk));
+computeRisk();
+
+/* ══════════════════════════════════════════════════════════
+   15. 직원경험 데이터 (펄스 서베이 + 키워드 감정분석)
+   ══════════════════════════════════════════════════════════ */
+const EXP_POSITIVE = ["좋다","좋아요","만족","성장","보람","배움","재미","협업","칭찬","도움","편하다","즐겁다"];
+const EXP_NEGATIVE = ["힘들다","힘들어","번아웃","이직","스트레스","과부하","답답","야근","불만","피곤","지친다","부담"];
+function expSentiment(text){
+  if(!text) return 0;
+  let pos=0, neg=0;
+  EXP_POSITIVE.forEach(w=>{ if(text.includes(w)) pos++; });
+  EXP_NEGATIVE.forEach(w=>{ if(text.includes(w)) neg++; });
+  const total = pos+neg;
+  return total===0 ? 0 : (pos-neg)/total;
+}
+let expHistory = [
+  {week:"1주차", rating:3.8, comments:["팀 분위기 좋아요","업무량 보통"]},
+  {week:"2주차", rating:3.6, comments:["약간 바빴지만 괜찮음","성장하는 느낌"]},
+  {week:"3주차", rating:3.2, comments:["야근이 늘어서 힘들다","프로젝트 마감 압박"]},
+  {week:"4주차", rating:2.9, comments:["번아웃 오는 것 같음","스트레스 받는 중"]},
+  {week:"5주차", rating:3.1, comments:["조금 나아짐","여전히 바쁨"]},
+  {week:"6주차", rating:3.7, comments:["협업이 잘 되어 만족","보람 있었음"]},
+  {week:"7주차", rating:3.9, comments:["칭찬 받아서 기분 좋음","편하게 일함"]},
+  {week:"8주차", rating:3.5, comments:["업무 배분 만족","가끔 답답함"]},
+];
+// 근태·연차 관리 탭과 동일한 5개 실제 부서 기준 eNPS 샘플
+const expDeptData = [
+  {name:"연구개발팀", enps: 28}, {name:"영업팀", enps: 9},
+  {name:"인사총무팀", enps: 24}, {name:"품질관리팀", enps: 17},
+  {name:"경영지원팀", enps: 30},
+];
+function renderExpTrend(){
+  const el = document.getElementById('expTrendChart');
+  el.innerHTML = expHistory.map(h=>{
+    const h_px = (h.rating/5*100).toFixed(0);
+    const color = h.rating>=3.5 ? '#3B82F6' : (h.rating>=3.0 ? '#94A3B8' : '#DC2626');
+    return `<div style="flex:1; position:relative;">
+      <div class="exp-bar" style="height:${h_px}px; background:${color};"></div>
+      <div class="exp-bar-label">${h.week}</div>
+    </div>`;
+  }).join('');
+}
+function renderExpKeywords(){
+  const freq = {};
+  expHistory.forEach(h=>h.comments.forEach(c=>{
+    [...EXP_POSITIVE, ...EXP_NEGATIVE].forEach(w=>{ if(c.includes(w)) freq[w]=(freq[w]||0)+1; });
+  }));
+  const sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxCount = Math.max(...sorted.map(([,c])=>c), 1);
+  document.getElementById('expKeywordList').innerHTML = sorted.map(([word,count])=>{
+    const isNeg = EXP_NEGATIVE.includes(word);
+    const tagBg = isNeg ? '#FEE2E2' : '#DCFCE7';
+    const textColor = isNeg ? '#DC2626' : '#16A34A';
+    return `<div class="exp-keyword-row">
+      <span class="exp-keyword-tag" style="background:${tagBg}; color:${textColor};">${word}</span>
+      <span class="exp-keyword-bar"><span class="exp-keyword-bar-fill" style="width:${count/maxCount*100}%; background:${textColor};"></span></span>
+      <span>${count}회</span>
+    </div>`;
+  }).join('') || '<div style="font-size:12px; color:#94A3B8;">아직 응답이 부족해요.</div>';
+}
+function renderExpDept(){
+  document.getElementById('expDeptList').innerHTML = expDeptData.map(d=>{
+    const color = d.enps>=20 ? '#16A34A' : (d.enps>=10 ? '#D97706' : '#DC2626');
+    return `<div class="exp-dept-row"><span>${d.name}</span><span style="font-weight:700; color:${color};">${d.enps}</span></div>`;
+  }).join('');
+}
+function renderExpLog(){
+  const recent = [...expHistory].slice(-4).reverse();
+  document.getElementById('expLog').innerHTML = recent.map(h=>{
+    return h.comments.map(c=>{
+      const s = expSentiment(c);
+      const tag = s>0.2?'긍정':(s<-0.2?'부정':'중립');
+      const tagColor = s>0.2?'#16A34A':(s<-0.2?'#DC2626':'#94A3B8');
+      return `<div class="exp-log-item"><span class="exp-tag" style="background:${tagColor}22; color:${tagColor};">${tag}</span>${c} <span style="color:#94A3B8;">(${h.week})</span></div>`;
+    }).join('');
+  }).join('');
+}
+function updateExpKPI(){
+  const avgRating = expHistory.reduce((s,h)=>s+h.rating,0)/expHistory.length;
+  const allComments = expHistory.flatMap(h=>h.comments);
+  const negRate = Math.round(allComments.filter(c=>expSentiment(c)<-0.2).length/allComments.length*100);
+  const enpsAvg = Math.round(expDeptData.reduce((s,d)=>s+d.enps,0)/expDeptData.length);
+  document.getElementById('expScore').textContent = avgRating.toFixed(1);
+  document.getElementById('expNeg').textContent = negRate+"%";
+  document.getElementById('expEnps').textContent = enpsAvg;
+}
+function renderExpAll(){ renderExpTrend(); renderExpKeywords(); renderExpDept(); renderExpLog(); updateExpKPI(); }
+document.getElementById('expSubmitBtn').addEventListener('click', () => {
+  const rating = parseFloat(document.getElementById('expRating').value);
+  const comment = document.getElementById('expComment').value.trim();
+  const weekNum = expHistory.length + 1;
+  expHistory.push({week: weekNum+"주차", rating, comments: comment?[comment]:[]});
+  if(expHistory.length > 8) expHistory.shift();
+  document.getElementById('expComment').value = '';
+  renderExpAll();
+});
+renderExpAll();
+
+/* ══════════════════════════════════════════════════════════
+   16. 근태 이상징후 분석 (번아웃 위험군 / 이탈 징후 / 몰입도)
+   ══════════════════════════════════════════════════════════ */
+// Python(pandas)으로 근태·연차 관리 탭 임직원 기준 16주 근태 데이터를 분석한 결과(attendance_analysis.py)
+const ATT_DATA = {
+  total_employees: 10,
+  burnout_rate_pct: 20.0,
+  burnout_risk: [
+    {"사번":"EMP001","이름":"김서준","부서":"인사총무팀","최대_연속_고위험주":4,"평균_연장근로시간":7.4},
+    {"사번":"EMP008","이름":"윤아린","부서":"품질관리팀","최대_연속_고위험주":3,"평균_연장근로시간":7.2}
+  ],
+  exit_signal: [
+    {"사번":"EMP007","이름":"조유준","부서":"품질관리팀","연차사용횟수":3,"금월요일_비율":1.00},
+    {"사번":"EMP005","이름":"정민준","부서":"영업팀","연차사용횟수":4,"금월요일_비율":0.75}
+  ],
+  dept_summary: [
+    {"부서":"인사총무팀","평균_정시출근율":0.919,"평균_연장근로시간":7.412},
+    {"부서":"품질관리팀","평균_정시출근율":0.910,"평균_연장근로시간":4.825},
+    {"부서":"연구개발팀","평균_정시출근율":0.908,"평균_연장근로시간":6.321},
+    {"부서":"영업팀","평균_정시출근율":0.907,"평균_연장근로시간":6.247},
+    {"부서":"경영지원팀","평균_정시출근율":0.887,"평균_연장근로시간":3.006}
+  ]
+};
+function attRiskBadge(streak){
+  return streak>=6 ? `<span class="badge badge-warn">매우 높음</span>` : `<span class="badge badge-warn" style="background:#FFEDD5; color:#EA580C;">주의</span>`;
+}
+function renderAttBurnout(){
+  document.getElementById('attBurnoutBody').innerHTML = ATT_DATA.burnout_risk.map(r=>`
+    <tr><td>${r.사번}</td><td class="name-cell">${r.이름}</td><td>${r.부서}</td>
+      <td>${r.최대_연속_고위험주}주</td><td class="num">${r.평균_연장근로시간}시간</td><td>${attRiskBadge(r.최대_연속_고위험주)}</td></tr>`).join('');
+}
+function renderAttExit(){
+  document.getElementById('attExitBody').innerHTML = ATT_DATA.exit_signal.map(r=>`
+    <tr><td>${r.사번}</td><td class="name-cell">${r.이름}</td><td>${r.부서}</td>
+      <td>${r.연차사용횟수}회</td><td class="num">${Math.round(r.금월요일_비율*100)}%</td></tr>`).join('');
+}
+function renderAttDept(){
+  const maxOvertime = Math.max(...ATT_DATA.dept_summary.map(d=>d.평균_연장근로시간));
+  document.getElementById('attDeptOnTime').innerHTML = ATT_DATA.dept_summary.slice()
+    .sort((a,b)=>b.평균_정시출근율-a.평균_정시출근율).map(d=>`
+    <div class="att-bar-row">
+      <div class="att-bar-label"><span>${d.부서}</span><span>${(d.평균_정시출근율*100).toFixed(1)}%</span></div>
+      <div class="att-bar-track"><div class="att-bar-fill" style="width:${d.평균_정시출근율*100}%; background:#3B82F6;"></div></div>
+    </div>`).join('');
+  document.getElementById('attDeptOvertime').innerHTML = ATT_DATA.dept_summary.slice()
+    .sort((a,b)=>b.평균_연장근로시간-a.평균_연장근로시간).map(d=>{
+      const isMax = d.평균_연장근로시간===maxOvertime;
+      return `<div class="att-bar-row">
+      <div class="att-bar-label"><span>${d.부서}</span><span>${d.평균_연장근로시간}시간</span></div>
+      <div class="att-bar-track"><div class="att-bar-fill" style="width:${d.평균_연장근로시간/maxOvertime*100}%; background:${isMax?'#DC2626':'#1E40AF'};"></div></div>
+    </div>`;}).join('');
+}
+function initAttRisk(){
+  document.getElementById('attTotal').textContent = ATT_DATA.total_employees+"명";
+  document.getElementById('attBurnoutRate').textContent = ATT_DATA.burnout_rate_pct+"%";
+  document.getElementById('attExitCount').textContent = ATT_DATA.exit_signal.length+"명";
+  renderAttBurnout(); renderAttExit(); renderAttDept();
+}
+initAttRisk();
+
+/* ══════════════════════════════════════════════════════════
+   17. 초기 렌더링
+   ══════════════════════════════════════════════════════════ */
+renderAll();
+</script>
+</body>
+</html>
