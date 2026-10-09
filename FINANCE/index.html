@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINANCE DESK — 재경관리 시스템</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16324F; --ink-2:#28455F; --brass:#B8862F; --brass-light:#F4E9D6;
+    --base:#F7F9FB; --surface:#FFFFFF; --line:#DCE2E8; --line-strong:#B9C3CC;
+    --text:#1B2733; --text-mute:#5C6B79; --pos:#2F7D5D; --neg:#B3423A;
+    --radius:2px; --serif:'Source Serif 4', serif; --sans:'Inter', -apple-system, "맑은 고딕", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--sans); background:var(--base); color:var(--text); -webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--brass-light);}
+
+  /* ---------- Layout ---------- */
+  .app{display:flex; min-height:100vh;}
+  .sidebar{width:230px; flex-shrink:0; background:var(--ink); color:#DCE6EE; display:flex; flex-direction:column; position:sticky; top:0; height:100vh;}
+  .brand{padding:26px 22px 18px; border-bottom:1px solid rgba(255,255,255,.12);}
+  .brand .name{font-family:var(--serif); font-size:20px; font-weight:600; color:#fff; letter-spacing:.2px;}
+  .brand .sub{font-size:11.5px; color:#9FB2C2; margin-top:4px;}
+  nav{padding:14px 10px; flex:1;}
+  .nav-item{display:flex; align-items:center; gap:10px; padding:11px 12px; margin-bottom:2px; border-radius:var(--radius);
+    color:#C7D5E0; font-size:13.5px; cursor:pointer; border:none; background:none; width:100%; text-align:left; font-family:var(--sans); border-left:2px solid transparent;}
+  .nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
+  .nav-item.active{background:rgba(184,134,47,.16); color:#fff; border-left:2px solid var(--brass);}
+  .nav-icon{width:16px; text-align:center; font-size:14px;}
+  .sidebar-foot{padding:16px 22px; border-top:1px solid rgba(255,255,255,.12); font-size:11px; color:#7E93A4;}
+
+  .main{flex:1; min-width:0;}
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:14px 32px; background:var(--surface); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; gap:14px; flex-wrap:wrap;}
+  .topbar h1{font-family:var(--serif); font-size:21px; font-weight:600; margin:0;}
+  .topbar .date{font-size:12.5px; color:var(--text-mute);}
+  .userbox{display:flex; align-items:center; gap:10px; font-size:12px; color:var(--text-mute);}
+  .userbox b{color:var(--ink);}
+  .content{padding:28px 32px 60px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .preview-banner{background:var(--brass-light); border:1px solid var(--brass); color:#7A5A1C; padding:10px 16px; border-radius:2px; margin-bottom:18px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center;}
+
+  .panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:22px;}
+  .panel-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); gap:10px; flex-wrap:wrap;}
+  .panel-head h2{font-size:14.5px; font-weight:600; margin:0; letter-spacing:.2px;}
+  .panel-head .desc{font-size:12px; color:var(--text-mute); margin-top:2px;}
+  .panel-body{padding:18px 20px;}
+
+  .kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;}
+  .kpi{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--ink); padding:16px 18px; border-radius:var(--radius);}
+  .kpi .label{font-size:11.5px; color:var(--text-mute); margin-bottom:8px;}
+  .kpi .num{font-family:var(--serif); font-size:26px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .kpi .unit{font-size:12px; color:var(--text-mute); margin-left:3px;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  thead th{background:#F0F4F7; color:var(--text-mute); font-weight:600; font-size:11.5px; text-align:left; padding:9px 10px; border-bottom:1px solid var(--line-strong); white-space:nowrap;}
+  tbody td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tbody tr:hover{background:#FAFBFC;}
+  td.num, th.num{text-align:right; font-variant-numeric:tabular-nums;}
+  tfoot td{font-weight:700; border-top:1px solid var(--line-strong); background:#F7F9FB;}
+  .tbl-wrap{overflow-x:auto;}
+  input.cell, select.cell{width:100%; border:1px solid transparent; background:transparent; font-family:var(--sans); font-size:12.5px; padding:4px 5px; border-radius:2px;}
+  input.cell:hover, select.cell:hover{border-color:var(--line);}
+  input.cell:focus, select.cell:focus{outline:none; border-color:var(--brass); background:#FFFDF7;}
+  input.cell.num{text-align:right; font-variant-numeric:tabular-nums;}
+
+  .btn{font-family:var(--sans); font-size:12.5px; font-weight:600; cursor:pointer; border-radius:var(--radius); padding:8px 14px; border:1px solid var(--line-strong); background:var(--surface); color:var(--text);}
+  .btn:hover{border-color:var(--ink);}
+  .btn.primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .btn.primary:hover{background:var(--ink-2);}
+  .btn.accent{background:var(--brass); color:#fff; border-color:var(--brass);}
+  .btn.accent:hover{opacity:.9;}
+  .btn.ghost{border-color:transparent; color:var(--text-mute);}
+  .btn.danger{color:var(--neg); border-color:var(--line);}
+  .btn.sm{padding:5px 9px; font-size:11.5px;}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+
+  .tag{display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; background:#EEF2F5; color:var(--ink-2);}
+  .tag.y{background:#E4F2EB; color:var(--pos);}
+  .tag.n{background:#F3E7E6; color:var(--neg);}
+  .tag.wait{background:#F3ECD9; color:#8A6A1E;}
+  .tag.approve{background:#E4F2EB; color:var(--pos);}
+  .tag.reject{background:#F3E7E6; color:var(--neg);}
+
+  .note{font-size:11.5px; color:var(--text-mute); padding:12px 20px; background:#F7F9FB; border-top:1px solid var(--line);}
+  .field-star{color:var(--neg);}
+
+  .subtabs{display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+  .subtab{padding:9px 16px; font-size:12.5px; font-weight:600; color:var(--text-mute); cursor:pointer; border-bottom:2px solid transparent; background:none; border-top:none; border-left:none; border-right:none; font-family:var(--sans);}
+  .subtab.active{color:var(--ink); border-bottom-color:var(--brass);}
+  .subview{display:none;}
+  .subview.active{display:block;}
+
+  .form-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px 14px; margin-bottom:14px;}
+  .form-grid label{display:block; font-size:11.5px; color:var(--text-mute); margin-bottom:4px;}
+  .form-grid input, .form-grid select{width:100%; padding:8px 9px; border:1px solid var(--line-strong); border-radius:2px; font-size:12.5px; font-family:var(--sans);}
+
+  .doc{background:#fff; border:1px solid var(--line); padding:34px 40px; max-width:760px; margin:0 auto;}
+  .doc h2.doctitle{text-align:center; font-family:var(--serif); font-size:26px; letter-spacing:10px; margin:4px 0 22px;}
+  .doc .stamp-row{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;}
+  .stamp-box{border:1px solid #333; width:74px; text-align:center;}
+  .stamp-box .lab{border-bottom:1px solid #333; font-size:11px; padding:5px 0; background:#F5F5F5; font-weight:600;}
+  .stamp-box .box{height:44px;}
+  .doc-meta{display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line-strong); margin-bottom:18px;}
+  .doc-meta div{padding:9px 12px; border-bottom:1px solid var(--line); font-size:12.5px;}
+  .doc-meta .k{color:var(--text-mute); font-size:10.5px; display:block; margin-bottom:2px;}
+  .doc-total{margin-top:16px; padding:14px 16px; background:var(--brass-light); border-left:3px solid var(--brass); font-family:var(--serif); font-size:17px; font-weight:600; color:#7A5A1C;}
+  .payslip{background:#fff; border:1px solid var(--line); padding:30px 36px; max-width:640px; margin:0 auto;}
+  .payslip h2{text-align:center; font-family:var(--serif); font-size:20px; letter-spacing:6px; margin:0 0 4px;}
+  .payslip .co{text-align:center; font-size:11.5px; color:var(--text-mute); margin-bottom:20px;}
+  .payslip-grid{display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:1px solid var(--line-strong); border-left:1px solid var(--line-strong); margin-bottom:18px;}
+  .payslip-grid div{padding:8px 12px; border-right:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); font-size:12.5px;}
+  .payslip-grid .k{color:var(--text-mute); font-size:10.5px; display:block;}
+  .payslip-cols{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  .payslip-net{margin-top:16px; padding:14px 16px; background:var(--brass-light); border-left:3px solid var(--brass); font-family:var(--serif); font-size:18px; font-weight:600; color:#7A5A1C; text-align:right;}
+
+  @media print{
+    .sidebar, .topbar, .no-print, .preview-banner{display:none !important;}
+    .content{padding:0;}
+    body{background:#fff;}
+    .doc, .payslip{border:none; max-width:100%;}
+  }
+
+  .dropzone{border:1.5px dashed var(--line-strong); border-radius:var(--radius); padding:26px; text-align:center; color:var(--text-mute); font-size:12.5px; margin-bottom:16px; background:#FAFBFC;}
+  .dropzone strong{color:var(--ink);}
+
+  .bar-track{background:#EEF2F5; border-radius:6px; height:8px; overflow:hidden; margin-top:5px;}
+  .bar-fill{height:100%; background:var(--ink);}
+  .bar-fill.over{background:var(--neg);}
+
+  ::-webkit-scrollbar{height:8px; width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="app on" id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="name">FINANCE DESK</div>
+      <div class="sub">하나솔루션 · 재경관리 시스템</div>
+    </div>
+    <nav id="navList"></nav>
+    <div class="sidebar-foot">데이터는 브라우저 메모리에만 저장됩니다.<br>상단 "백업 저장/불러오기"로 보관하세요.</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="viewTitle">대시보드</h1>
+      <div class="btn-row no-print">
+        <span class="date" id="todayLabel"></span>
+        <select id="previewSelect" class="cell" style="width:auto; border:1px solid var(--line-strong); padding:7px 8px; display:none;"></select>
+        <div class="userbox"><b id="userName"></b> <span id="userRole"></span></div>
+        <button class="btn sm" id="btnExport">백업 저장</button>
+        <button class="btn sm" id="btnImportTrigger">백업 불러오기</button>
+        <input type="file" id="importFile" accept=".json" style="display:none">
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="preview-banner no-print" id="previewBanner" style="display:none;">
+        <span id="previewBannerText"></span>
+        <button class="btn sm" id="btnExitPreview">관리자 화면으로 돌아가기</button>
+      </div>
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="view" id="view-dashboard">
+        <div class="kpi-row">
+          <div class="kpi"><div class="label">이번 달 급여 실지급 합계</div><div class="num" id="kpiPayroll">-</div></div>
+          <div class="kpi"><div class="label">이번 달 지급결의 합계</div><div class="num" id="kpiPayment">-</div></div>
+          <div class="kpi"><div class="label">법인카드 사용 합계</div><div class="num" id="kpiCard">-</div></div>
+          <div class="kpi"><div class="label">재직 인원</div><div class="num" id="kpiHeadcount">-</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>이번 달 계정과목별 지출 요약</h2><div class="desc">급여(인건비) · 지급결의서 · 법인카드 사용내역 기준 합산</div></div></div>
+          <div class="panel-body"><div class="tbl-wrap"><table id="dashSummaryTbl"></table></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>연차 잔여 현황</h2><div class="desc">근속연수 기준 자동 계산</div></div></div>
+          <div class="panel-body"><div class="tbl-wrap"><table id="dashLeaveTbl"></table></div></div>
+        </div>
+      </section>
+
+      <!-- ============ PAYROLL ============ -->
+      <section class="view" id="view-payroll">
+        <div class="subtabs no-print">
+          <button class="subtab active" data-sub="emp">사원마스터</button>
+          <button class="subtab" data-sub="att">근태 · 휴가관리</button>
+          <button class="subtab" data-sub="ledger">급여대장(자동계산)</button>
+          <button class="subtab" data-sub="slip">개인별 급여명세서</button>
+        </div>
+
+        <div class="subview active" id="sub-emp">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h2>사원마스터</h2><div class="desc">기본급 · 수당은 급여대장 계산의 기준값입니다.</div></div>
+              <button class="btn accent sm no-print" id="btnAddEmp">+ 사원 추가</button>
+            </div>
+            <div class="panel-body"><div class="tbl-wrap"><table id="empTbl"></table></div></div>
+            <div class="note">부양가족수는 본인을 포함한 인원입니다. 소득세 자동조회에 사용됩니다.</div>
+          </div>
+        </div>
+
+        <div class="subview" id="sub-att">
+          <div class="panel">
+            <div class="panel-head"><div><h2>근태현황</h2><div class="desc">소정근무일수 대비 결근·지각·조퇴·연장근무를 입력하세요.</div></div></div>
+            <div class="panel-body"><div class="tbl-wrap"><table id="attTbl"></table></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>휴가관리(연차)</h2><div class="desc">근로기준법 제60조 기준 간이 계산식 — 실제 회사 정책에 맞게 조정하세요.</div></div></div>
+            <div class="panel-body"><div class="tbl-wrap"><table id="leaveTbl"></table></div></div>
+          </div>
+        </div>
+
+        <div class="subview" id="sub-ledger">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h2 id="ledgerTitle">급여대장</h2><div class="desc">사원마스터·근태·4대보험 요율을 반영해 자동 계산됩니다.</div></div>
+              <div class="btn-row no-print"><button class="btn sm" id="btnPrintLedger">인쇄</button><button class="btn accent sm" id="btnCloseLedger">이번 달 마감(이력 저장)</button></div>
+            </div>
+            <div class="panel-body"><div class="tbl-wrap"><table id="ledgerTbl"></table></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>4대보험 요율 (예시)</h2><div class="desc">실사용 전 최신 고시 요율로 갱신하세요.</div></div></div>
+            <div class="panel-body"><div class="tbl-wrap"><table id="rateTbl"></table></div></div>
+          </div>
+        </div>
+
+        <div class="subview" id="sub-slip">
+          <div class="panel no-print">
+            <div class="panel-head"><div><h2>직원 선택</h2></div></div>
+            <div class="panel-body">
+              <select id="slipEmpSelect" style="padding:8px 10px; border:1px solid var(--line-strong); border-radius:2px; font-size:13px;"></select>
+              <button class="btn sm" id="btnPrintSlip" style="margin-left:8px;">인쇄</button>
+            </div>
+          </div>
+          <div class="payslip" id="slipArea"></div>
+        </div>
+      </section>
+
+      <!-- ============ PAYMENT REQUEST ============ -->
+      <section class="view" id="view-payment">
+        <div class="subtabs no-print">
+          <button class="subtab active" data-sub="master">정기지급마스터</button>
+          <button class="subtab" data-sub="doc">지급결의서 발행</button>
+        </div>
+
+        <div class="subview active" id="sub-master">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h2>정기지급마스터</h2><div class="desc">매월 고정으로 나가는 거래처 · 금액을 1회 등록해두세요.</div></div>
+              <button class="btn accent sm no-print" id="btnAddPay">+ 항목 추가</button>
+            </div>
+            <div class="panel-body"><div class="tbl-wrap"><table id="payMasterTbl"></table></div></div>
+          </div>
+        </div>
+
+        <div class="subview" id="sub-doc">
+          <div class="panel no-print">
+            <div class="panel-head"><div><h2>결의일자 설정</h2><div class="desc">이 날짜 하나만 바꾸면 아래 결의서 전체가 자동 갱신됩니다.</div></div></div>
+            <div class="panel-body">
+              <div class="form-grid" style="grid-template-columns:200px 200px;">
+                <div><label>결의일자 <span class="field-star">★</span></label><input type="date" id="docDate"></div>
+                <div><label>기안자</label><input type="text" id="docAuthor" value="서하나"></div>
+              </div>
+              <div class="btn-row">
+                <span style="font-size:12px; color:var(--text-mute);">결재상태:</span>
+                <span class="tag wait" id="docStatusTag">대기</span>
+                <button class="btn sm" id="btnApprove">승인</button>
+                <button class="btn sm danger" id="btnReject">반려</button>
+                <button class="btn primary sm" id="btnPrintDoc">지급결의서 인쇄</button>
+                <button class="btn accent sm" id="btnCloseDoc">마감(이력 저장)</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="doc" id="docPrintArea">
+            <div class="stamp-row">
+              <div class="tag" id="docStatusTagPrint" style="align-self:flex-start;">대기</div>
+              <div style="display:flex;">
+                <div class="stamp-box"><div class="lab">담당</div><div class="box"></div></div>
+                <div class="stamp-box"><div class="lab">팀장</div><div class="box"></div></div>
+                <div class="stamp-box"><div class="lab">대표이사</div><div class="box"></div></div>
+              </div>
+            </div>
+            <h2 class="doctitle">지 급 결 의 서</h2>
+            <div class="doc-meta">
+              <div><span class="k">결의번호</span><span id="docNo">-</span></div>
+              <div><span class="k">결의일자</span><span id="docDateShow">-</span></div>
+              <div><span class="k">기안부서</span>재경팀</div>
+              <div><span class="k">기안자</span><span id="docAuthorShow">-</span></div>
+              <div style="grid-column:1/3;"><span class="k">적요</span><span id="docMemo">-</span></div>
+            </div>
+            <div class="tbl-wrap"><table id="docItemTbl"></table></div>
+            <div class="doc-total" id="docTotal"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CORPORATE CARD ============ -->
+      <section class="view" id="view-card">
+        <div class="panel no-print">
+          <div class="panel-head"><div><h2>법인카드 사용내역 업로드</h2><div class="desc">카드사에서 내려받은 CSV(카드번호,이용일자,가맹점,금액)를 업로드하세요.</div></div></div>
+          <div class="panel-body">
+            <div class="dropzone"><div><strong>CSV 파일 선택</strong> — 헤더: 카드번호, 이용일자, 가맹점, 금액</div><input type="file" id="cardFile" accept=".csv" style="margin-top:10px;"></div>
+            <div class="btn-row">
+              <button class="btn sm" id="btnSampleCard">샘플 데이터 불러오기</button>
+              <button class="btn sm" id="btnAddCardRow">+ 수동으로 한 건 추가</button>
+              <button class="btn sm danger" id="btnClearCard">전체 지우기</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-head"><div><h2>카드번호별 사용 합계</h2></div></div><div class="panel-body"><div class="tbl-wrap"><table id="cardByNumTbl"></table></div></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>계정과목별 사용 합계</h2><div class="desc">가맹점명 키워드로 자동 분류됩니다.</div></div></div><div class="panel-body"><div class="tbl-wrap"><table id="cardByCatTbl"></table></div></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>전체 사용내역</h2></div></div><div class="panel-body"><div class="tbl-wrap"><table id="cardListTbl"></table></div></div></div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>자동분류 규칙</h2><div class="desc">가맹점명에 아래 키워드가 포함되면 해당 계정과목으로 자동 분류합니다.</div></div><button class="btn accent sm no-print" id="btnAddRule">+ 규칙 추가</button></div>
+          <div class="panel-body"><div class="tbl-wrap"><table id="ruleTbl"></table></div></div>
+        </div>
+      </section>
+
+      <!-- ============ 세금계산서 대사 ============ -->
+      <section class="view" id="view-invoice">
+        <div class="panel no-print">
+          <div class="panel-head">
+            <div><h2>세금계산서 등록</h2><div class="desc">국세청 홈택스에서 받은 매입 세금계산서를 등록하면 법인카드 내역과 자동 대사합니다.</div></div>
+            <button class="btn accent sm" id="btnAddInvoice">+ 세금계산서 추가</button>
+          </div>
+          <div class="panel-body">
+            <div class="btn-row"><button class="btn sm" id="btnSampleInvoice">샘플 데이터 불러오기</button></div>
+          </div>
+        </div>
+
+        <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);">
+          <div class="kpi"><div class="label">매입세액공제 가능 합계</div><div class="num" id="kpiVatOk">-</div></div>
+          <div class="kpi"><div class="label">불공제(비용 불인정) 합계</div><div class="num" id="kpiVatNo">-</div></div>
+          <div class="kpi"><div class="label">법인카드 대사 매칭률</div><div class="num" id="kpiMatchRate">-</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><div><h2>세금계산서 ↔ 법인카드 대사 결과</h2><div class="desc">거래처명·금액이 법인카드 사용내역과 일치하면 자동으로 "대사완료"로 표시됩니다. 개인/비업무 사용으로 의심되는 항목은 "업무관련" 체크를 해제하면 매입세액 불공제로 자동 분류됩니다.</div></div></div>
+          <div class="panel-body"><div class="tbl-wrap"><table id="invoiceTbl"></table></div></div>
+          <div class="note">※ 더폼나에서 실제로 수행했던 "세금계산서 vs 법인카드 대조 → 비용인정 여부 필터링" 프로세스를 자동화한 기능입니다.</div>
+        </div>
+      </section>
+
+      <!-- ============ 예산 · 실적 ============ -->
+      <section class="view" id="view-budget">
+        <div class="panel">
+          <div class="panel-head"><div><h2>계정과목별 예산 대비 실적</h2><div class="desc">예산은 직접 입력 — 실적은 급여·지급결의서·법인카드 데이터에서 자동 집계됩니다.</div></div></div>
+          <div class="panel-body"><div class="tbl-wrap"><table id="budgetTbl"></table></div></div>
+        </div>
+      </section>
+
+      <!-- ============ 이력조회 ============ -->
+      <section class="view" id="view-history">
+        <div class="panel">
+          <div class="panel-head"><div><h2>급여대장 마감 이력</h2><div class="desc">"급여대장 → 이번 달 마감" 버튼으로 저장된 스냅샷입니다.</div></div></div>
+          <div class="panel-body"><div class="tbl-wrap"><table id="histPayrollTbl"></table></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>지급결의서 마감 이력</h2></div></div>
+          <div class="panel-body"><div class="tbl-wrap"><table id="histPaymentTbl"></table></div></div>
+        </div>
+        <div class="panel" id="histDetailPanel" style="display:none;">
+          <div class="panel-head"><div><h2 id="histDetailTitle">상세 내역</h2></div></div>
+          <div class="panel-body"><div class="tbl-wrap"><table id="histDetailTbl"></table></div></div>
+        </div>
+      </section>
+
+      <!-- ============ 내 급여명세서 (직원 로그인) ============ -->
+      <section class="view" id="view-myslip">
+        <div class="panel no-print"><div class="panel-head"><div><h2>내 급여명세서</h2></div></div><div class="panel-body"><button class="btn sm" id="btnPrintMySlip">인쇄</button></div></div>
+        <div class="payslip" id="mySlipArea"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   STATE
+========================================================= */
+const fmt = n => (Math.round(n||0)).toLocaleString('ko-KR');
+const todayISO = () => new Date().toISOString().slice(0,10);
+const uid = () => Math.random().toString(36).slice(2,9);
+
+const STATE = {
+  employees: [
+    {id:uid(), no:'E01', name:'김지훈', dept:'재경팀', pos:'과장', hire:'2019-03-04', dep:3, base:3200000, allow:200000, meal:200000, sched:21, absent:0, late:0, early:0, ot:6, leaveUsed:4},
+    {id:uid(), no:'E02', name:'이서연', dept:'재경팀', pos:'대리', hire:'2021-07-19', dep:1, base:2800000, allow:100000, meal:200000, sched:21, absent:0, late:1, early:0, ot:3, leaveUsed:3},
+    {id:uid(), no:'E03', name:'박도윤', dept:'재경팀', pos:'사원', hire:'2023-01-09', dep:1, base:2500000, allow:0,      meal:200000, sched:21, absent:1, late:0, early:0, ot:0, leaveUsed:0},
+    {id:uid(), no:'E04', name:'최민서', dept:'인사총무팀', pos:'차장', hire:'2016-05-22', dep:4, base:3800000, allow:300000, meal:200000, sched:21, absent:0, late:0, early:0, ot:8, leaveUsed:5},
+    {id:uid(), no:'E05', name:'정하은', dept:'인사총무팀', pos:'사원', hire:'2024-08-12', dep:1, base:2450000, allow:0,      meal:200000, sched:21, absent:0, late:0, early:1, ot:0, leaveUsed:3},
+    {id:uid(), no:'E06', name:'강태우', dept:'영업팀',     pos:'부장', hire:'2013-02-14', dep:2, base:4500000, allow:400000, meal:200000, sched:21, absent:0, late:0, early:0, ot:10,leaveUsed:9},
+  ],
+  rates: {pension:0.045, health:0.03545, ltc:0.1295, employment:0.009},
+  taxBrackets: [
+    {min:0,       max:2000000,  c1:10000, c2:5000,  c3:0,     c4:0},
+    {min:2000000, max:2500000,  c1:40000, c2:25000, c3:10000, c4:0},
+    {min:2500000, max:3000000,  c1:90000, c2:65000, c3:40000, c4:15000},
+    {min:3000000, max:3500000,  c1:150000,c2:115000,c3:80000, c4:45000},
+    {min:3500000, max:4000000,  c1:220000,c2:175000,c3:130000,c4:90000},
+    {min:4000000, max:4500000,  c1:300000,c2:245000,c3:190000,c4:140000},
+    {min:4500000, max:999999999,c1:400000,c2:330000,c3:260000,c4:200000},
+  ],
+  payMaster: [
+    {id:uid(), no:1, name:'사무실 임차료', vendor:'㈜스페이스온', acct:'임차료', supply:3000000, vat:300000, method:'계좌이체', note:'매월 25일 지급'},
+    {id:uid(), no:2, name:'통신비(인터넷/전화)', vendor:'KT 기업', acct:'통신비', supply:250000, vat:25000, method:'자동이체', note:'-'},
+    {id:uid(), no:3, name:'정수기렌탈료', vendor:'코웨이', acct:'임차료', supply:60000, vat:6000, method:'자동이체', note:'-'},
+    {id:uid(), no:4, name:'화재보험료', vendor:'삼성화재', acct:'보험료', supply:180000, vat:0, method:'계좌이체', note:'부가세 면세'},
+    {id:uid(), no:5, name:'클라우드 서비스', vendor:'Amazon Web Services', acct:'지급수수료', supply:420000, vat:42000, method:'법인카드', note:'환율 변동 가능'},
+    {id:uid(), no:6, name:'회계 프로그램 구독료', vendor:'㈜더존비즈온', acct:'지급수수료', supply:110000, vat:11000, method:'자동이체', note:'-'},
+  ],
+  docDate: '2026-09-25',
+  docIncluded: {},
+  docStatus: '대기',
+  cards: [],
+  rules: [
+    {kw:'스타벅스', cat:'복리후생비'}, {kw:'카페', cat:'복리후생비'}, {kw:'커피', cat:'복리후생비'},
+    {kw:'주유', cat:'차량유지비'}, {kw:'GS칼텍스', cat:'차량유지비'}, {kw:'SK에너지', cat:'차량유지비'},
+    {kw:'다이소', cat:'소모품비'}, {kw:'문구', cat:'소모품비'},
+    {kw:'배달', cat:'복리후생비'}, {kw:'식당', cat:'회의비'}, {kw:'김밥', cat:'회의비'},
+    {kw:'KT', cat:'통신비'}, {kw:'SKT', cat:'통신비'}, {kw:'통신', cat:'통신비'},
+    {kw:'AWS', cat:'지급수수료'}, {kw:'구글', cat:'지급수수료'},
+  ],
+  invoices: [],
+  budget: {'인건비':20000000, '임차료':3500000, '통신비':300000, '보험료':200000, '지급수수료':600000, '복리후생비':300000, '차량유지비':200000, '소모품비':150000, '회의비':150000, '기타':100000},
+  payrollHistory: [],
+  paymentHistory: [],
+};
+STATE.payMaster.forEach(p => STATE.docIncluded[p.id] = true);
+
+/* =========================================================
+   AUTH
+========================================================= */
+let AUTH = {role:'admin', name:'경영지원팀'};   // no login gate — always opens as admin
+let PREVIEW_EMP_ID = null;                     // admin previewing an employee's payslip
+
+document.getElementById('userName').textContent = AUTH.name;
+document.getElementById('userRole').textContent = '(경영지원팀)';
+
+const ADMIN_NAV = [
+  {view:'dashboard', label:'대시보드'},
+  {view:'payroll', label:'급여관리'},
+  {view:'payment', label:'지급결의서'},
+  {view:'card', label:'법인카드'},
+  {view:'invoice', label:'세금계산서 대사'},
+  {view:'budget', label:'예산 · 실적'},
+  {view:'history', label:'이력조회'},
+];
+const EMP_NAV = [{view:'myslip', label:'내 급여명세서'}];
+
+function buildNav(){
+  const list = AUTH.role==='admin' ? ADMIN_NAV : EMP_NAV;
+  document.getElementById('navList').innerHTML = list.map((n,i)=>
+    `<button class="nav-item ${i===0?'active':''}" data-view="${n.view}"><span class="nav-icon">◆</span> ${n.label}</button>`).join('');
+  document.querySelectorAll('.nav-item').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      PREVIEW_EMP_ID = null;
+      document.getElementById('previewBanner').style.display='none';
+      document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      document.getElementById('view-'+btn.dataset.view).classList.add('active');
+      document.getElementById('viewTitle').textContent = btn.textContent.trim();
+      renderAll();
+    });
+  });
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+list[0].view).classList.add('active');
+  document.getElementById('viewTitle').textContent = list[0].label;
+
+  const previewSel = document.getElementById('previewSelect');
+  if(AUTH.role==='admin'){
+    previewSel.style.display='inline-block';
+    previewSel.innerHTML = '<option value="">직원화면 미리보기...</option>'+STATE.employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  } else {
+    previewSel.style.display='none';
+  }
+}
+document.getElementById('previewSelect').addEventListener('change', (e)=>{
+  if(!e.target.value) return;
+  PREVIEW_EMP_ID = e.target.value;
+  const emp = STATE.employees.find(x=>x.id===PREVIEW_EMP_ID);
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-myslip').classList.add('active');
+  document.getElementById('viewTitle').textContent = '내 급여명세서 (미리보기)';
+  document.getElementById('previewBanner').style.display='flex';
+  document.getElementById('previewBannerText').textContent = `${emp.name}님 화면을 미리보고 있습니다.`;
+  renderAll();
+});
+document.getElementById('btnExitPreview').addEventListener('click', ()=>{
+  PREVIEW_EMP_ID = null;
+  document.getElementById('previewSelect').value='';
+  document.getElementById('previewBanner').style.display='none';
+  document.querySelectorAll('.nav-item')[0].dispatchEvent(new Event('click'));
+});
+
+/* subtabs */
+document.querySelectorAll('.subtab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const group = btn.parentElement;
+    group.querySelectorAll('.subtab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const container = group.parentElement;
+    container.querySelectorAll('.subview').forEach(v=>v.classList.remove('active'));
+    container.querySelector('#sub-'+btn.dataset.sub).classList.add('active');
+  });
+});
+document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+document.getElementById('docDate').value = STATE.docDate;
+document.getElementById('docDate').addEventListener('input', e=>{ STATE.docDate = e.target.value; STATE.docStatus='대기'; renderPaymentDoc(); });
+document.getElementById('docAuthor').addEventListener('input', ()=>renderPaymentDoc());
+
+/* =========================================================
+   CALC HELPERS
+========================================================= */
+function years(hire){
+  const h = new Date(hire), n = new Date();
+  let y = n.getFullYear()-h.getFullYear();
+  if (n.getMonth()<h.getMonth() || (n.getMonth()===h.getMonth() && n.getDate()<h.getDate())) y--;
+  return Math.max(0,y);
+}
+function monthsSince(hire){
+  const h = new Date(hire), n = new Date();
+  let m = (n.getFullYear()-h.getFullYear())*12 + (n.getMonth()-h.getMonth());
+  if (n.getDate()<h.getDate()) m--;
+  return Math.max(0,m);
+}
+function earnedLeave(emp){
+  const y = years(emp.hire);
+  if (y===0) return Math.min(11, monthsSince(emp.hire));
+  return Math.min(25, 15 + Math.floor((y-1)/2));
+}
+function taxLookup(taxable, dep){
+  const row = STATE.taxBrackets.find(b => taxable>=b.min && taxable<b.max) || STATE.taxBrackets[STATE.taxBrackets.length-1];
+  const d = Math.min(Math.max(dep,1),4);
+  return d===1?row.c1:d===2?row.c2:d===3?row.c3:row.c4;
+}
+function round10(n){ return Math.round(n/10)*10; }
+function payrollRow(emp){
+  const absentDeduct = emp.sched>0 ? (emp.base/emp.sched)*emp.absent : 0;
+  const taxable = emp.base + emp.allow - absentDeduct;
+  const pension = round10(taxable*STATE.rates.pension);
+  const health  = round10(taxable*STATE.rates.health);
+  const ltc     = round10(health*STATE.rates.ltc);
+  const empIns  = round10(taxable*STATE.rates.employment);
+  const incTax  = taxLookup(taxable, emp.dep);
+  const localTax= round10(incTax*0.1);
+  const deductSum = pension+health+ltc+empIns+incTax+localTax;
+  const net = taxable + emp.meal - deductSum;
+  return {absentDeduct, taxable, pension, health, ltc, empIns, incTax, localTax, deductSum, net};
+}
+function classify(merchant){
+  const rule = STATE.rules.find(r => merchant && merchant.includes(r.kw));
+  return rule? rule.cat : '기타';
+}
+function acctSummary(){
+  const byAcct = {};
+  STATE.payMaster.filter(p=>STATE.docIncluded[p.id]).forEach(p=>{ byAcct[p.acct]=(byAcct[p.acct]||0)+p.supply+p.vat; });
+  byAcct['인건비'] = STATE.employees.reduce((s,e)=>s+payrollRow(e).net,0);
+  STATE.cards.forEach(c=>{ const cat=classify(c.merchant); byAcct[cat]=(byAcct[cat]||0)+Number(c.amount||0); });
+  return byAcct;
+}
+
+/* =========================================================
+   RENDER: DASHBOARD
+========================================================= */
+function renderDashboard(){
+  const payrollTotal = STATE.employees.reduce((s,e)=>s+payrollRow(e).net,0);
+  const paymentTotal = STATE.payMaster.filter(p=>STATE.docIncluded[p.id]).reduce((s,p)=>s+p.supply+p.vat,0);
+  const cardTotal = STATE.cards.reduce((s,c)=>s+Number(c.amount||0),0);
+  document.getElementById('kpiPayroll').innerHTML = fmt(payrollTotal)+'<span class="unit">원</span>';
+  document.getElementById('kpiPayment').innerHTML = fmt(paymentTotal)+'<span class="unit">원</span>';
+  document.getElementById('kpiCard').innerHTML = fmt(cardTotal)+'<span class="unit">원</span>';
+  document.getElementById('kpiHeadcount').innerHTML = STATE.employees.length+'<span class="unit">명</span>';
+
+  const byAcct = acctSummary();
+  const rows = Object.entries(byAcct).sort((a,b)=>b[1]-a[1]);
+  const total = rows.reduce((s,r)=>s+r[1],0);
+  document.getElementById('dashSummaryTbl').innerHTML =
+    '<thead><tr><th>계정과목</th><th class="num">금액</th><th class="num">비중</th></tr></thead><tbody>'+
+    rows.map(([k,v])=>`<tr><td>${k}</td><td class="num">${fmt(v)}</td><td class="num">${total? (v/total*100).toFixed(1):'0.0'}%</td></tr>`).join('')+
+    `</tbody><tfoot><tr><td>합계</td><td class="num">${fmt(total)}</td><td class="num">100.0%</td></tr></tfoot>`;
+
+  document.getElementById('dashLeaveTbl').innerHTML =
+    '<thead><tr><th>성명</th><th>부서</th><th class="num">근속연수</th><th class="num">발생</th><th class="num">사용</th><th class="num">잔여</th></tr></thead><tbody>'+
+    STATE.employees.map(e=>{ const earned = earnedLeave(e);
+      return `<tr><td>${e.name}</td><td>${e.dept}</td><td class="num">${years(e.hire)}</td><td class="num">${earned}</td><td class="num">${e.leaveUsed}</td><td class="num">${earned-e.leaveUsed}</td></tr>`;
+    }).join('')+'</tbody>';
+}
+
+/* =========================================================
+   RENDER: PAYROLL — 사원마스터 / 근태·휴가 / 급여대장
+========================================================= */
+function empField(e, field, type='text'){ return `<input class="cell ${type==='number'?'num':''}" type="${type}" value="${e[field]}" data-emp="${e.id}" data-field="${field}">`; }
+function renderEmpTbl(){
+  const rows = STATE.employees.map(e=>`
+    <tr>
+      <td>${e.no}</td><td>${empField(e,'name')}</td><td>${empField(e,'dept')}</td><td>${empField(e,'pos')}</td>
+      <td><input class="cell" type="date" value="${e.hire}" data-emp="${e.id}" data-field="hire"></td>
+      <td>${empField(e,'dep','number')}</td>
+      <td class="num">${empField(e,'base','number')}</td><td class="num">${empField(e,'allow','number')}</td><td class="num">${empField(e,'meal','number')}</td>
+      <td class="no-print"><button class="btn sm ghost" data-del-emp="${e.id}">삭제</button></td>
+    </tr>`).join('');
+  document.getElementById('empTbl').innerHTML =
+    '<thead><tr><th>사번</th><th>성명</th><th>부서</th><th>직급</th><th>입사일</th><th>부양가족</th><th class="num">기본급</th><th class="num">직책수당</th><th class="num">식대(비과세)</th><th class="no-print"></th></tr></thead><tbody>'+rows+'</tbody>';
+  document.querySelectorAll('#empTbl [data-emp]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const emp = STATE.employees.find(x=>x.id===el.dataset.emp);
+      emp[el.dataset.field] = el.type==='number'? Number(el.value)||0 : el.value;
+      renderAll();
+    });
+  });
+  document.querySelectorAll('#empTbl [data-del-emp]').forEach(el=>{
+    el.addEventListener('click', ()=>{ STATE.employees = STATE.employees.filter(x=>x.id!==el.dataset.delEmp); renderAll(); });
+  });
+}
+document.getElementById('btnAddEmp').addEventListener('click', ()=>{
+  const n = STATE.employees.length+1;
+  STATE.employees.push({id:uid(), no:'E0'+n, name:'신규직원', dept:'재경팀', pos:'사원', hire: todayISO(), dep:1, base:2500000, allow:0, meal:200000, sched:21, absent:0, late:0, early:0, ot:0, leaveUsed:0});
+  renderAll();
+});
+
+function attField(e, field){ return `<input class="cell num" type="number" value="${e[field]}" data-emp="${e.id}" data-field="${field}">`; }
+function renderAttTbl(){
+  document.getElementById('attTbl').innerHTML =
+    '<thead><tr><th>성명</th><th class="num">소정근무일수</th><th class="num">결근(일)</th><th class="num">지각(회)</th><th class="num">조퇴(회)</th><th class="num">연장근무(시간)</th></tr></thead><tbody>'+
+    STATE.employees.map(e=>`<tr><td>${e.name}</td><td class="num">${attField(e,'sched')}</td><td class="num">${attField(e,'absent')}</td><td class="num">${attField(e,'late')}</td><td class="num">${attField(e,'early')}</td><td class="num">${attField(e,'ot')}</td></tr>`).join('')+'</tbody>';
+  document.querySelectorAll('#attTbl [data-emp]').forEach(el=>{
+    el.addEventListener('input', ()=>{ const emp = STATE.employees.find(x=>x.id===el.dataset.emp); emp[el.dataset.field]=Number(el.value)||0; renderAll(); });
+  });
+}
+function renderLeaveTbl(){
+  document.getElementById('leaveTbl').innerHTML =
+    '<thead><tr><th>성명</th><th>입사일</th><th class="num">근속연수</th><th class="num">연차발생</th><th class="num">사용(입력)</th><th class="num">잔여</th></tr></thead><tbody>'+
+    STATE.employees.map(e=>{ const earned = earnedLeave(e);
+      return `<tr><td>${e.name}</td><td>${e.hire}</td><td class="num">${years(e.hire)}</td><td class="num">${earned}</td><td class="num">${attField(e,'leaveUsed')}</td><td class="num">${earned-e.leaveUsed}</td></tr>`;
+    }).join('')+'</tbody>';
+  document.querySelectorAll('#leaveTbl [data-emp]').forEach(el=>{
+    el.addEventListener('input', ()=>{ const emp = STATE.employees.find(x=>x.id===el.dataset.emp); emp[el.dataset.field]=Number(el.value)||0; renderAll(); });
+  });
+}
+function renderLedger(){
+  document.getElementById('ledgerTitle').textContent = `급여대장 — ${new Date().getFullYear()}년 ${new Date().getMonth()+1}월`;
+  let sums = {taxable:0,pension:0,health:0,ltc:0,empIns:0,incTax:0,localTax:0,net:0};
+  const rows = STATE.employees.map(e=>{
+    const r = payrollRow(e); Object.keys(sums).forEach(k=>sums[k]+=r[k]||0);
+    return `<tr><td>${e.no}</td><td>${e.name}</td><td>${e.dept}</td>
+      <td class="num">${fmt(e.base)}</td><td class="num">${fmt(e.allow)}</td><td class="num">${fmt(e.meal)}</td>
+      <td class="num">${fmt(r.taxable)}</td><td class="num">${fmt(r.pension)}</td><td class="num">${fmt(r.health)}</td><td class="num">${fmt(r.ltc)}</td><td class="num">${fmt(r.empIns)}</td>
+      <td class="num">${fmt(r.incTax)}</td><td class="num">${fmt(r.localTax)}</td><td class="num" style="font-weight:700;">${fmt(r.net)}</td></tr>`;
+  }).join('');
+  document.getElementById('ledgerTbl').innerHTML =
+    '<thead><tr><th>사번</th><th>성명</th><th>부서</th><th class="num">기본급</th><th class="num">직책수당</th><th class="num">식대</th><th class="num">과세대상</th><th class="num">국민연금</th><th class="num">건강보험</th><th class="num">장기요양</th><th class="num">고용보험</th><th class="num">소득세</th><th class="num">지방소득세</th><th class="num">실지급액</th></tr></thead>'+
+    `<tbody>${rows}</tbody>`+
+    `<tfoot><tr><td colspan="6">합계</td><td class="num">${fmt(sums.taxable)}</td><td class="num">${fmt(sums.pension)}</td><td class="num">${fmt(sums.health)}</td><td class="num">${fmt(sums.ltc)}</td><td class="num">${fmt(sums.empIns)}</td><td class="num">${fmt(sums.incTax)}</td><td class="num">${fmt(sums.localTax)}</td><td class="num">${fmt(sums.net)}</td></tr></tfoot>`;
+  document.getElementById('rateTbl').innerHTML =
+    '<thead><tr><th>구분</th><th class="num">근로자 부담률</th><th>비고</th></tr></thead><tbody>'+
+    `<tr><td>국민연금</td><td class="num">${(STATE.rates.pension*100).toFixed(2)}%</td><td>상한/하한 예시 미반영(단순 버전)</td></tr>`+
+    `<tr><td>건강보험</td><td class="num">${(STATE.rates.health*100).toFixed(3)}%</td><td></td></tr>`+
+    `<tr><td>장기요양보험</td><td class="num">건강보험료×${(STATE.rates.ltc*100).toFixed(2)}%</td><td></td></tr>`+
+    `<tr><td>고용보험</td><td class="num">${(STATE.rates.employment*100).toFixed(2)}%</td><td></td></tr></tbody>`;
+}
+document.getElementById('btnPrintLedger').addEventListener('click', ()=>window.print());
+document.getElementById('btnCloseLedger').addEventListener('click', ()=>{
+  const month = new Date().toISOString().slice(0,7);
+  const rows = STATE.employees.map(e=>({no:e.no, name:e.name, dept:e.dept, ...payrollRow(e)}));
+  const total = rows.reduce((s,r)=>s+r.net,0);
+  STATE.payrollHistory = STATE.payrollHistory.filter(h=>h.month!==month);
+  STATE.payrollHistory.push({month, closedAt:new Date().toLocaleString('ko-KR'), headcount:rows.length, total, rows});
+  alert(`${month} 급여대장이 마감·저장되었습니다. (이력조회 탭에서 확인 가능)`);
+  renderAll();
+});
+
+/* =========================================================
+   개인별 급여명세서
+========================================================= */
+function payslipHTML(emp){
+  if(!emp) return '<div class="note">직원을 선택하세요.</div>';
+  const r = payrollRow(emp);
+  const [y,m] = [new Date().getFullYear(), new Date().getMonth()+1];
+  return `
+    <h2>급 여 명 세 서</h2>
+    <div class="co">하나솔루션 · ${y}년 ${m}월분</div>
+    <div class="payslip-grid">
+      <div><span class="k">성명</span>${emp.name}</div>
+      <div><span class="k">사번</span>${emp.no}</div>
+      <div><span class="k">부서</span>${emp.dept}</div>
+      <div><span class="k">직급</span>${emp.pos}</div>
+      <div><span class="k">입사일</span>${emp.hire}</div>
+      <div><span class="k">부양가족수</span>${emp.dep}명</div>
+    </div>
+    <div class="payslip-cols">
+      <div>
+        <table><thead><tr><th>지급항목</th><th class="num">금액</th></tr></thead><tbody>
+        <tr><td>기본급</td><td class="num">${fmt(emp.base)}</td></tr>
+        <tr><td>직책수당</td><td class="num">${fmt(emp.allow)}</td></tr>
+        <tr><td>식대(비과세)</td><td class="num">${fmt(emp.meal)}</td></tr>
+        <tr><td>결근공제</td><td class="num">-${fmt(r.absentDeduct)}</td></tr>
+        </tbody><tfoot><tr><td>지급합계</td><td class="num">${fmt(r.taxable+emp.meal)}</td></tr></tfoot></table>
+      </div>
+      <div>
+        <table><thead><tr><th>공제항목</th><th class="num">금액</th></tr></thead><tbody>
+        <tr><td>국민연금</td><td class="num">${fmt(r.pension)}</td></tr>
+        <tr><td>건강보험</td><td class="num">${fmt(r.health)}</td></tr>
+        <tr><td>장기요양보험</td><td class="num">${fmt(r.ltc)}</td></tr>
+        <tr><td>고용보험</td><td class="num">${fmt(r.empIns)}</td></tr>
+        <tr><td>소득세</td><td class="num">${fmt(r.incTax)}</td></tr>
+        <tr><td>지방소득세</td><td class="num">${fmt(r.localTax)}</td></tr>
+        </tbody><tfoot><tr><td>공제합계</td><td class="num">${fmt(r.deductSum)}</td></tr></tfoot></table>
+      </div>
+    </div>
+    <div class="payslip-net">실지급액 &nbsp; ${fmt(r.net)} 원</div>
+  `;
+}
+function renderSlip(){
+  const sel = document.getElementById('slipEmpSelect');
+  if(sel.options.length !== STATE.employees.length){
+    sel.innerHTML = STATE.employees.map(e=>`<option value="${e.id}">${e.name} (${e.dept})</option>`).join('');
+  }
+  const emp = STATE.employees.find(e=>e.id===sel.value) || STATE.employees[0];
+  document.getElementById('slipArea').innerHTML = payslipHTML(emp);
+}
+document.getElementById('slipEmpSelect').addEventListener('change', renderSlip);
+document.getElementById('btnPrintSlip').addEventListener('click', ()=>window.print());
+document.getElementById('btnPrintMySlip').addEventListener('click', ()=>window.print());
+
+function renderMySlip(){
+  let emp;
+  if(PREVIEW_EMP_ID){ emp = STATE.employees.find(e=>e.id===PREVIEW_EMP_ID); }
+  else if(AUTH.role==='employee'){ emp = STATE.employees.find(e=>e.id===AUTH.empId); }
+  document.getElementById('mySlipArea').innerHTML = payslipHTML(emp);
+}
+
+/* =========================================================
+   RENDER: 정기지급마스터 / 지급결의서
+========================================================= */
+function payField(p, field, type='text'){ return `<input class="cell ${type==='number'?'num':''}" type="${type}" value="${p[field]}" data-pay="${p.id}" data-field="${field}">`; }
+function renderPayMaster(){
+  document.getElementById('payMasterTbl').innerHTML =
+    '<thead><tr><th>순번</th><th>항목명</th><th>지급처</th><th>계정과목</th><th class="num">공급가액</th><th class="num">부가세</th><th class="num">합계</th><th>지급수단</th><th class="no-print"></th></tr></thead><tbody>'+
+    STATE.payMaster.map(p=>`<tr><td class="num">${p.no}</td><td>${payField(p,'name')}</td><td>${payField(p,'vendor')}</td><td>${payField(p,'acct')}</td>
+      <td class="num">${payField(p,'supply','number')}</td><td class="num">${payField(p,'vat','number')}</td><td class="num">${fmt(p.supply+p.vat)}</td><td>${payField(p,'method')}</td>
+      <td class="no-print"><button class="btn sm ghost" data-del-pay="${p.id}">삭제</button></td></tr>`).join('')+'</tbody>';
+  document.querySelectorAll('#payMasterTbl [data-pay]').forEach(el=>{
+    el.addEventListener('input', ()=>{ const p=STATE.payMaster.find(x=>x.id===el.dataset.pay); p[el.dataset.field]= el.type==='number'? Number(el.value)||0 : el.value; renderAll(); });
+  });
+  document.querySelectorAll('#payMasterTbl [data-del-pay]').forEach(el=>{
+    el.addEventListener('click', ()=>{ STATE.payMaster = STATE.payMaster.filter(x=>x.id!==el.dataset.delPay); renderAll(); });
+  });
+}
+document.getElementById('btnAddPay').addEventListener('click', ()=>{
+  const id=uid(); STATE.payMaster.push({id, no:STATE.payMaster.length+1, name:'신규 항목', vendor:'', acct:'', supply:0, vat:0, method:'계좌이체', note:''});
+  STATE.docIncluded[id]=true; renderAll();
+});
+
+function statusTagClass(s){ return s==='승인'?'approve':(s==='반려'?'reject':'wait'); }
+function renderPaymentDoc(){
+  const d = STATE.docDate || todayISO();
+  const [y,m] = d.split('-');
+  document.getElementById('docNo').textContent = `PAY-${y}${m}-01`;
+  document.getElementById('docDateShow').textContent = d;
+  document.getElementById('docAuthorShow').textContent = document.getElementById('docAuthor').value || '서하나';
+  document.getElementById('docMemo').textContent = `${y}년 ${Number(m)}월 정기 고정비 지급 건`;
+  ['docStatusTag','docStatusTagPrint'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.textContent = STATE.docStatus; el.className = (id==='docStatusTag'?'tag ':'tag ')+statusTagClass(STATE.docStatus);
+  });
+
+  const rows = STATE.payMaster.map(p=>{
+    const inc = STATE.docIncluded[p.id]!==false;
+    return `<tr><td class="num">${p.no}</td><td class="no-print"><input type="checkbox" ${inc?'checked':''} data-doc-inc="${p.id}"></td>
+      <td>${p.name}</td><td>${p.vendor}</td><td>${p.acct}</td>
+      <td class="num">${inc?fmt(p.supply):0}</td><td class="num">${inc?fmt(p.vat):0}</td><td class="num">${inc?fmt(p.supply+p.vat):0}</td><td>${d}</td></tr>`;
+  }).join('');
+  document.getElementById('docItemTbl').innerHTML =
+    '<thead><tr><th>순번</th><th class="no-print">포함</th><th>항목</th><th>지급처</th><th>계정과목</th><th class="num">공급가액</th><th class="num">부가세</th><th class="num">합계</th><th>지급예정일</th></tr></thead><tbody>'+rows+'</tbody>';
+  document.querySelectorAll('[data-doc-inc]').forEach(el=>{
+    el.addEventListener('change', ()=>{ STATE.docIncluded[el.dataset.docInc]=el.checked; renderAll(); });
+  });
+  const total = STATE.payMaster.filter(p=>STATE.docIncluded[p.id]!==false).reduce((s,p)=>s+p.supply+p.vat,0);
+  document.getElementById('docTotal').textContent = `총 지급합계 : ${fmt(total)} 원`;
+}
+document.getElementById('btnPrintDoc').addEventListener('click', ()=>window.print());
+document.getElementById('btnApprove').addEventListener('click', ()=>{ STATE.docStatus='승인'; renderAll(); });
+document.getElementById('btnReject').addEventListener('click', ()=>{ STATE.docStatus='반려'; renderAll(); });
+document.getElementById('btnCloseDoc').addEventListener('click', ()=>{
+  const d = STATE.docDate || todayISO();
+  const month = d.slice(0,7);
+  const items = STATE.payMaster.filter(p=>STATE.docIncluded[p.id]!==false).map(p=>({name:p.name, vendor:p.vendor, acct:p.acct, amount:p.supply+p.vat}));
+  const total = items.reduce((s,i)=>s+i.amount,0);
+  STATE.paymentHistory = STATE.paymentHistory.filter(h=>h.month!==month);
+  STATE.paymentHistory.push({month, docNo:document.getElementById('docNo').textContent, status:STATE.docStatus, closedAt:new Date().toLocaleString('ko-KR'), total, items});
+  alert(`${month} 지급결의서가 마감·저장되었습니다. (이력조회 탭에서 확인 가능)`);
+  renderAll();
+});
+
+/* =========================================================
+   CARD (법인카드)
+========================================================= */
+function renderCard(){
+  const byNum = {};
+  STATE.cards.forEach(c=>{ byNum[c.card]=(byNum[c.card]||0)+Number(c.amount||0); });
+  document.getElementById('cardByNumTbl').innerHTML =
+    '<thead><tr><th>카드번호</th><th class="num">건수</th><th class="num">사용합계</th></tr></thead><tbody>'+
+    Object.keys(byNum).map(k=>`<tr><td>${k}</td><td class="num">${STATE.cards.filter(c=>c.card===k).length}</td><td class="num">${fmt(byNum[k])}</td></tr>`).join('')+
+    `</tbody>`+(Object.keys(byNum).length?`<tfoot><tr><td>합계</td><td class="num">${STATE.cards.length}</td><td class="num">${fmt(STATE.cards.reduce((s,c)=>s+Number(c.amount||0),0))}</td></tr></tfoot>`:'');
+
+  const byCat = {};
+  STATE.cards.forEach(c=>{ const cat=classify(c.merchant); byCat[cat]=(byCat[cat]||0)+Number(c.amount||0); });
+  document.getElementById('cardByCatTbl').innerHTML =
+    '<thead><tr><th>계정과목</th><th class="num">사용합계</th></tr></thead><tbody>'+
+    Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td><span class="tag">${k}</span></td><td class="num">${fmt(v)}</td></tr>`).join('')+'</tbody>';
+
+  document.getElementById('cardListTbl').innerHTML =
+    '<thead><tr><th>카드번호</th><th>이용일자</th><th>가맹점</th><th class="num">금액</th><th>자동분류</th><th class="no-print"></th></tr></thead><tbody>'+
+    STATE.cards.map((c,i)=>`<tr><td>${c.card}</td><td>${c.date}</td><td>${c.merchant}</td><td class="num">${fmt(c.amount)}</td><td><span class="tag">${classify(c.merchant)}</span></td><td class="no-print"><button class="btn sm ghost" data-del-card="${i}">삭제</button></td></tr>`).join('')+'</tbody>';
+  document.querySelectorAll('[data-del-card]').forEach(el=>{ el.addEventListener('click', ()=>{ STATE.cards.splice(Number(el.dataset.delCard),1); renderAll(); }); });
+
+  document.getElementById('ruleTbl').innerHTML =
+    '<thead><tr><th>키워드</th><th>계정과목</th><th class="no-print"></th></tr></thead><tbody>'+
+    STATE.rules.map((r,i)=>`<tr><td><input class="cell" data-rule="${i}" data-field="kw" value="${r.kw}"></td><td><input class="cell" data-rule="${i}" data-field="cat" value="${r.cat}"></td><td class="no-print"><button class="btn sm ghost" data-del-rule="${i}">삭제</button></td></tr>`).join('')+'</tbody>';
+  document.querySelectorAll('[data-rule]').forEach(el=>{ el.addEventListener('input', ()=>{ STATE.rules[el.dataset.rule][el.dataset.field]=el.value; renderAll(); }); });
+  document.querySelectorAll('[data-del-rule]').forEach(el=>{ el.addEventListener('click', ()=>{ STATE.rules.splice(Number(el.dataset.delRule),1); renderAll(); }); });
+}
+document.getElementById('btnAddRule').addEventListener('click', ()=>{ STATE.rules.push({kw:'', cat:'기타'}); renderAll(); });
+document.getElementById('btnAddCardRow').addEventListener('click', ()=>{ STATE.cards.push({card:'1234-56**-****-7890', date:todayISO(), merchant:'가맹점 입력', amount:0}); renderAll(); });
+document.getElementById('btnClearCard').addEventListener('click', ()=>{ if(confirm('법인카드 사용내역을 전부 삭제할까요?')){ STATE.cards=[]; renderAll(); } });
+document.getElementById('btnSampleCard').addEventListener('click', ()=>{
+  STATE.cards = STATE.cards.concat([
+    {card:'1234-56**-****-7890', date:'2026-09-02', merchant:'스타벅스 강남점', amount:24000},
+    {card:'1234-56**-****-7890', date:'2026-09-03', merchant:'GS칼텍스 역삼주유소', amount:80000},
+    {card:'1234-56**-****-7890', date:'2026-09-05', merchant:'다이소 강남역점', amount:15000},
+    {card:'1234-56**-****-7890', date:'2026-09-08', merchant:'배달의민족 결제', amount:32000},
+    {card:'9876-54**-****-1122', date:'2026-09-04', merchant:'AWS Korea', amount:462000},
+    {card:'9876-54**-****-1122', date:'2026-09-10', merchant:'KT 통신요금', amount:88000},
+    {card:'9876-54**-****-1122', date:'2026-09-12', merchant:'김밥천국 역삼점', amount:18000},
+    {card:'9876-54**-****-1122', date:'2026-09-15', merchant:'교보문고 문구코너', amount:22000},
+  ]);
+  renderAll();
+});
+document.getElementById('cardFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    const lines = evt.target.result.split(/\r?\n/).filter(l=>l.trim().length);
+    const start = /카드|card/i.test(lines[0]) ? 1 : 0;
+    for(let i=start;i<lines.length;i++){
+      const cols = lines[i].split(',').map(s=>s.trim());
+      if(cols.length<4) continue;
+      STATE.cards.push({card:cols[0], date:cols[1], merchant:cols[2], amount:Number(cols[3].replace(/[^0-9.-]/g,''))||0});
+    }
+    renderAll();
+  };
+  reader.readAsText(file, 'utf-8');
+});
+
+/* =========================================================
+   세금계산서 대사
+========================================================= */
+function matchInvoice(inv){
+  return STATE.cards.find(c => c.merchant && inv.vendor && (c.merchant.includes(inv.vendor) || inv.vendor.includes(c.merchant)) && Math.abs(Number(c.amount||0) - (inv.supply+inv.vat)) < 1000);
+}
+function invField(inv, field, type='text'){ return `<input class="cell ${type==='number'?'num':''}" type="${type}" value="${inv[field]}" data-inv="${inv.id}" data-field="${field}">`; }
+function renderInvoice(){
+  let okSum=0, noSum=0, matched=0;
+  const rows = STATE.invoices.map(inv=>{
+    const m = matchInvoice(inv);
+    const ok = inv.bizUse!==false;
+    if(ok) okSum += inv.vat; else noSum += inv.vat;
+    if(m) matched++;
+    return `<tr>
+      <td>${invField(inv,'vendor')}</td><td><input class="cell" type="date" value="${inv.date}" data-inv="${inv.id}" data-field="date"></td>
+      <td class="num">${invField(inv,'supply','number')}</td><td class="num">${invField(inv,'vat','number')}</td>
+      <td>${invField(inv,'acct')}</td>
+      <td>${m?`<span class="tag y">대사완료</span>`:`<span class="tag n">미대사</span>`}</td>
+      <td style="text-align:center;"><input type="checkbox" ${ok?'checked':''} data-inv-biz="${inv.id}"></td>
+      <td>${ok?'<span class="tag y">공제가능</span>':'<span class="tag n">불공제</span>'}</td>
+      <td class="no-print"><button class="btn sm ghost" data-del-inv="${inv.id}">삭제</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('invoiceTbl').innerHTML =
+    '<thead><tr><th>거래처</th><th>발행일</th><th class="num">공급가액</th><th class="num">부가세</th><th>계정과목</th><th>카드 대사</th><th class="no-print">업무관련</th><th>공제여부</th><th class="no-print"></th></tr></thead><tbody>'+rows+'</tbody>';
+
+  document.querySelectorAll('#invoiceTbl [data-inv]').forEach(el=>{
+    el.addEventListener('input', ()=>{ const inv=STATE.invoices.find(x=>x.id===el.dataset.inv); inv[el.dataset.field]= el.type==='number'? Number(el.value)||0 : el.value; renderAll(); });
+  });
+  document.querySelectorAll('[data-inv-biz]').forEach(el=>{
+    el.addEventListener('change', ()=>{ STATE.invoices.find(x=>x.id===el.dataset.invBiz).bizUse = el.checked; renderAll(); });
+  });
+  document.querySelectorAll('[data-del-inv]').forEach(el=>{
+    el.addEventListener('click', ()=>{ STATE.invoices = STATE.invoices.filter(x=>x.id!==el.dataset.delInv); renderAll(); });
+  });
+
+  document.getElementById('kpiVatOk').innerHTML = fmt(okSum)+'<span class="unit">원</span>';
+  document.getElementById('kpiVatNo').innerHTML = fmt(noSum)+'<span class="unit">원</span>';
+  document.getElementById('kpiMatchRate').innerHTML = (STATE.invoices.length? (matched/STATE.invoices.length*100).toFixed(0):'0')+'<span class="unit">%</span>';
+}
+document.getElementById('btnAddInvoice').addEventListener('click', ()=>{
+  STATE.invoices.push({id:uid(), vendor:'신규 거래처', date:todayISO(), supply:0, vat:0, acct:'소모품비', bizUse:true});
+  renderAll();
+});
+document.getElementById('btnSampleInvoice').addEventListener('click', ()=>{
+  STATE.invoices = STATE.invoices.concat([
+    {id:uid(), vendor:'Amazon Web Services', date:'2026-09-04', supply:420000, vat:42000, acct:'지급수수료', bizUse:true},
+    {id:uid(), vendor:'KT 기업', date:'2026-09-10', supply:250000, vat:25000, acct:'통신비', bizUse:true},
+    {id:uid(), vendor:'스타벅스 강남점', date:'2026-09-02', supply:21818, vat:2182, acct:'복리후생비', bizUse:true},
+    {id:uid(), vendor:'개인 미용실', date:'2026-09-06', supply:50000, vat:5000, acct:'복리후생비', bizUse:false},
+    {id:uid(), vendor:'㈜스페이스온', date:'2026-09-25', supply:3000000, vat:300000, acct:'임차료', bizUse:true},
+  ]);
+  renderAll();
+});
+
+/* =========================================================
+   예산 · 실적
+========================================================= */
+function renderBudget(){
+  const actual = acctSummary();
+  const keys = Array.from(new Set([...Object.keys(STATE.budget), ...Object.keys(actual)]));
+  document.getElementById('budgetTbl').innerHTML =
+    '<thead><tr><th>계정과목</th><th class="num">예산</th><th class="num">실적</th><th class="num">차이</th><th>집행률</th></tr></thead><tbody>'+
+    keys.map(k=>{
+      const b = STATE.budget[k]||0, a = actual[k]||0, diff = a-b;
+      const pct = b? Math.min(999,(a/b*100)) : (a>0?100:0);
+      return `<tr>
+        <td>${k}</td>
+        <td class="num"><input class="cell num" type="number" data-budget="${k}" value="${b}"></td>
+        <td class="num">${fmt(a)}</td>
+        <td class="num" style="color:${diff>0?'var(--neg)':'var(--pos)'};">${diff>0?'+':''}${fmt(diff)}</td>
+        <td style="min-width:120px;">${pct.toFixed(0)}%<div class="bar-track"><div class="bar-fill ${pct>100?'over':''}" style="width:${Math.min(100,pct)}%;"></div></div></td>
+      </tr>`;
+    }).join('')+'</tbody>';
+  document.querySelectorAll('[data-budget]').forEach(el=>{
+    el.addEventListener('input', ()=>{ STATE.budget[el.dataset.budget] = Number(el.value)||0; renderAll(); });
+  });
+}
+
+/* =========================================================
+   이력조회
+========================================================= */
+function renderHistory(){
+  document.getElementById('histPayrollTbl').innerHTML =
+    '<thead><tr><th>월</th><th class="num">인원</th><th class="num">실지급 합계</th><th>마감일시</th><th class="no-print"></th></tr></thead><tbody>'+
+    STATE.payrollHistory.slice().reverse().map(h=>`<tr><td>${h.month}</td><td class="num">${h.headcount}</td><td class="num">${fmt(h.total)}</td><td>${h.closedAt}</td><td class="no-print"><button class="btn sm" data-hist-payroll="${h.month}">상세</button></td></tr>`).join('')+
+    (STATE.payrollHistory.length?'':'</tbody>')+'</tbody>';
+  document.getElementById('histPaymentTbl').innerHTML =
+    '<thead><tr><th>월</th><th>결의번호</th><th>결재상태</th><th class="num">합계</th><th>마감일시</th><th class="no-print"></th></tr></thead><tbody>'+
+    STATE.paymentHistory.slice().reverse().map(h=>`<tr><td>${h.month}</td><td>${h.docNo}</td><td><span class="tag ${statusTagClass(h.status)}">${h.status}</span></td><td class="num">${fmt(h.total)}</td><td>${h.closedAt}</td><td class="no-print"><button class="btn sm" data-hist-payment="${h.month}">상세</button></td></tr>`).join('')+'</tbody>';
+
+  document.querySelectorAll('[data-hist-payroll]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const h = STATE.payrollHistory.find(x=>x.month===el.dataset.histPayroll);
+      document.getElementById('histDetailPanel').style.display='block';
+      document.getElementById('histDetailTitle').textContent = `${h.month} 급여대장 상세`;
+      document.getElementById('histDetailTbl').innerHTML =
+        '<thead><tr><th>사번</th><th>성명</th><th>부서</th><th class="num">실지급액</th></tr></thead><tbody>'+
+        h.rows.map(r=>`<tr><td>${r.no}</td><td>${r.name}</td><td>${r.dept}</td><td class="num">${fmt(r.net)}</td></tr>`).join('')+'</tbody>';
+    });
+  });
+  document.querySelectorAll('[data-hist-payment]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const h = STATE.paymentHistory.find(x=>x.month===el.dataset.histPayment);
+      document.getElementById('histDetailPanel').style.display='block';
+      document.getElementById('histDetailTitle').textContent = `${h.month} 지급결의서 상세 (${h.docNo})`;
+      document.getElementById('histDetailTbl').innerHTML =
+        '<thead><tr><th>항목</th><th>지급처</th><th>계정과목</th><th class="num">금액</th></tr></thead><tbody>'+
+        h.items.map(i=>`<tr><td>${i.name}</td><td>${i.vendor}</td><td>${i.acct}</td><td class="num">${fmt(i.amount)}</td></tr>`).join('')+'</tbody>';
+    });
+  });
+}
+
+/* =========================================================
+   BACKUP
+========================================================= */
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(STATE,null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `finance-desk-backup-${todayISO()}.json`; a.click();
+});
+document.getElementById('btnImportTrigger').addEventListener('click', ()=>document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{ Object.assign(STATE, JSON.parse(evt.target.result)); renderAll(); alert('백업을 불러왔습니다.'); }
+    catch(err){ alert('파일을 읽을 수 없습니다.'); }
+  };
+  reader.readAsText(file, 'utf-8');
+});
+
+/* =========================================================
+   MASTER RENDER
+========================================================= */
+function renderAll(){
+  renderDashboard();
+  renderEmpTbl();
+  renderAttTbl();
+  renderLeaveTbl();
+  renderLedger();
+  renderSlip();
+  renderPayMaster();
+  renderPaymentDoc();
+  renderCard();
+  renderInvoice();
+  renderBudget();
+  renderHistory();
+  renderMySlip();
+}
+
+/* =========================================================
+   BOOT — no login gate, opens straight into the app
+========================================================= */
+buildNav();
+renderAll();
+</script>
+</body>
+</html>
