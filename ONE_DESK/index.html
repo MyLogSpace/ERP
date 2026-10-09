@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONE DESK · 하나솔루션 경영지원 통합 플랫폼</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">OD</span>
+      <div class="brand-text">
+        <strong>ONE DESK</strong>
+        <small>하나솔루션 · 경영지원 통합 플랫폼</small>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item is-active" data-view="dashboard">
+        <span class="nav-ico">◆</span>대시보드
+      </button>
+      <button class="nav-item" data-view="myinfo">
+        <span class="nav-ico">◆</span>마이페이지
+      </button>
+      <button class="nav-item" data-view="hrm" data-role="admin">
+        <span class="nav-ico">◆</span>인사관리 <em>HRM</em>
+      </button>
+      <button class="nav-item" data-view="approval" data-role="admin">
+        <span class="nav-ico">◆</span>전자결재<span class="nav-badge" id="approvalBadge"></span>
+      </button>
+      <button class="nav-item" data-view="accounting" data-role="admin">
+        <span class="nav-ico">◆</span>회계·지출증빙
+      </button>
+      <button class="nav-item" data-view="crm" data-role="admin">
+        <span class="nav-ico">◆</span>고객·영업 <em>CRM</em>
+      </button>
+      <button class="nav-item" data-view="assets" data-role="admin">
+        <span class="nav-ico">◆</span>재고·자산관리
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button class="nav-item nav-item--ghost" data-view="settings" data-role="admin">
+        <span class="nav-ico">⚙</span>데이터 백업/복구
+      </button>
+      <div class="sidebar-note">
+        브라우저(localStorage)에만 저장됩니다.<br>주기적으로 백업해 주세요.
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1 id="viewTitle">경영 요약 대시보드</h1>
+        <p id="viewSubtitle">오늘 현황을 한눈에 확인하세요</p>
+      </div>
+      <div class="topbar-right">
+        <div class="role-toggle" id="roleToggle">
+          <button type="button" class="role-toggle-btn" data-role="general">일반 직원 보기</button>
+          <button type="button" class="role-toggle-btn" data-role="admin">경영지원팀 보기</button>
+        </div>
+        <span class="today" id="todayLabel"></span>
+        <div class="user-chip" id="userChip">
+          <div class="user-chip-avatar" id="userChipAvatar"></div>
+          <div class="user-chip-info">
+            <strong id="userChipName"></strong>
+            <small id="userChipMeta"></small>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content" id="content">
+      <!-- 각 모듈 JS가 이곳에 렌더링합니다 -->
+    </main>
+  </div>
+</div>
+
+<!-- ===================== MODAL ROOT ===================== -->
+<div class="modal-overlay" id="modalRoot"></div>
+
+<!-- ===================== TOAST ===================== -->
+<div class="toast" id="toast"></div>
+
+<script src="js/storage.js"></script>
+<script src="js/seed.js"></script>
+<script src="js/ui.js"></script>
+<script>window.Views = {};</script>
+<script src="js/dashboard.js"></script>
+<script src="js/hrm.js"></script>
+<script src="js/approval.js"></script>
+<script src="js/accounting.js"></script>
+<script src="js/crm.js"></script>
+<script src="js/assets.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/myinfo.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
